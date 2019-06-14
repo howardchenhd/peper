@@ -216,6 +216,9 @@ def get_parser():
     parser.add_argument("--zero_shot", nargs='*', default=[],
                         help=" if given [es fr zh], the zero shot is es-fr es-zh fr-zh.")
     
+    parser.add_argument("--eval_num",type=int,default=200)
+    parser.add_argument("--eval_type",nargs="*",default=['valid'])
+
     return parser
 
 
