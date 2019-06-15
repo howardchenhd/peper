@@ -59,7 +59,7 @@ class Evaluator(object):
         #     n_sentences = 300 if data_set == 'test' else 1500
         # else:
             # n_sentences = -1 if data_set == 'valid' else 100
-        n_sentences = -1
+        n_sentences = self.params.eval_num
         subsample = 1
 
         if lang2 is None:
@@ -90,9 +90,11 @@ class Evaluator(object):
         params = self.params
         params.ref_paths = {}
 
-        for (lang1, lang2), v in self.data['para'].items():
-
-            assert lang1 < lang2
+        for (lang1, lang2) in self.params.mt_steps:
+            
+            #assert lang1 < lang2
+            k = tuple(sorted([lang1, lang2]))
+            v = self.data['para'][k]
 
             for data_set in ['valid', 'test']:
 
@@ -110,8 +112,9 @@ class Evaluator(object):
 
                 # convert to text
                 for (sent1, len1), (sent2, len2) in self.get_iterator(data_set, lang1, lang2):
-                    lang1_txt.extend(convert_to_text(sent1, len1, self.dico['src'], params))
-                    lang2_txt.extend(convert_to_text(sent2, len2, self.dico['tgt'], params))
+                    
+                        lang1_txt.extend(convert_to_text(sent1, len1, self.dico['src'], params))
+                        lang2_txt.extend(convert_to_text(sent2, len2, self.dico['tgt'], params))
 
                 # replace <unk> by <<unk>> as these tokens cannot be counted in BLEU
                 lang1_txt = [x.replace('<unk>', '<<unk>>') for x in lang1_txt]

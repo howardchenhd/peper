@@ -223,6 +223,7 @@ class Trainer(object):
         assert stream is False or lang2 is None
         iterator = self.iterators.get((iter_name, lang1, lang2), None)
         if iterator is None:
+            print(lang1,lang2)
             iterator = self.get_iterator(iter_name, lang1, lang2, stream)
         try:
             x = next(iterator)
@@ -471,7 +472,7 @@ class Trainer(object):
         if not self.params.is_master:
             return
         if self.params.save_periodic > 0 and self.epoch % self.params.save_periodic == 0:
-            self.save_model('periodic-%i' % self.epoch)
+            self.save_checkpoint( str(self.epoch))
 
     def save_best_model(self, scores):
         """
@@ -778,7 +779,7 @@ class EncDecTrainer(Trainer):
         loss = lambda_coeff * loss
 
         # optimize
-        if self.params.fix_encoder:
+        if self.params.fix_enc:
             self.optimize(loss, ['decoder'])
         else:
             self.optimize(loss, ['encoder','decoder'])

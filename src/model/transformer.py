@@ -262,7 +262,7 @@ class TransformerModel(nn.Module):
         self.lang_emb = params.lang_emb    
 
         # dictionary / languages
-        self.n_langs = params.n_langs
+        self.n_langs = params.enc_langnum if params.enc_langnum != -1 else params.n_langs
         self.eos_index = params.eos_index
         self.pad_index = params.pad_index
         self.dico = dico
@@ -273,7 +273,6 @@ class TransformerModel(nn.Module):
         else:
             assert len(self.dico) == self.n_words
 
-        assert len(self.id2lang) == len(self.lang2id) == self.n_langs
 
         # model parameters
         self.dim = params.emb_dim       # 512 by default

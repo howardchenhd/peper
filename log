@@ -1,0 +1,214 @@
+nohup: ignoring input
+SLURM job: False
+0 - Number of nodes: 1
+0 - Node ID        : 0
+0 - Local rank     : 0
+0 - Global rank    : 0
+0 - World size     : 1
+0 - GPUs per node  : 1
+0 - Master         : True
+0 - Multi-node     : False
+0 - Multi-GPU      : False
+0 - Hostname       : amax
+INFO - 06/15/19 13:18:18 - 0:00:00 - ============ Initialized logger ============
+INFO - 06/15/19 13:18:18 - 0:00:00 - ae_steps: []
+                                     asm: False
+                                     attention_dropout: 0.1
+                                     batch_size: 32
+                                     beam_size: 1
+                                     bptt: 256
+                                     bt_src_langs: []
+                                     bt_steps: []
+                                     clip_grad_norm: 5
+                                     clm_steps: []
+                                     command: python train.py --local_rank=0 --dump_path '/data/bjji/github/model/eurparl' --exp_name tlm --exp_id en_es_fr --enc_layers 6 --data_path '/data/bjji/github/data/en_es_fr' --dec_layers 6 --emb_dim 1024 --lgs 'en-es-fr' --encoder_only False --mt_step 'en-es,fr-es' --n_layers 6 --n_heads 8 --dropout '0.1' --bptt 256 --tokens_per_batch 2500 --max_vocab 95000 --optimizer 'adam_inverse_sqrt,beta1=0.9,beta2=0.98,lr=0.0001' --epoch_size 500000 --eval_bleu True --stopping_criterion 'valid_fr-es_mt_bleu,100' --validation_metrics 'valid_fr-es_mt_bleu' --eval_type valid --eval_num '-1' --save_periodic 1 --beam_size 1 --fix_enc True --zero_shot fr es --reset_lang 'en:0,fr:1,es:0' --enc_langnum 2 --fix_enc True --gelu_activation true --attention_dropout '0.1' --reload_model '/data/bjji/github/model/eurparl/tlm_base/tlm_en_fr_eurp_half/best-valid_mlm_ppl.pth,' --exp_id "en_es_fr"
+                                     context_size: 0
+                                     data_path: /data/bjji/github/data/en_es_fr
+                                     debug_slurm: False
+                                     debug_train: False
+                                     dec_layers: 6
+                                     dec_special: False
+                                     dropout: 0.1
+                                     dump_path: /data/bjji/github/model/eurparl/tlm/en_es_fr
+                                     early_stopping: False
+                                     emb_dim: 1024
+                                     enc_langnum: 2
+                                     enc_layers: 6
+                                     enc_special: False
+                                     encoder_only: False
+                                     epoch_size: 500000
+                                     eval_bleu: True
+                                     eval_num: -1
+                                     eval_only: False
+                                     eval_type: ['valid']
+                                     exp_id: en_es_fr
+                                     exp_name: tlm
+                                     fix_enc: True
+                                     fix_enc_emb: False
+                                     fp16: False
+                                     gelu_activation: True
+                                     global_rank: 0
+                                     group_by_size: True
+                                     id2lang: {0: 'es', 1: 'fr'}
+                                     is_master: True
+                                     is_slurm_job: False
+                                     lambda_ae: 1
+                                     lambda_bt: 1
+                                     lambda_clm: 1
+                                     lambda_mass: 1
+                                     lambda_mlm: 1
+                                     lambda_mt: 1
+                                     lambda_pc: 1
+                                     lang2id: {'en': 0, 'fr': 1, 'es': 0}
+                                     lang_emb: True
+                                     langs: ['en', 'es', 'fr']
+                                     length_penalty: 1
+                                     lg_sampling_factor: -1
+                                     lgs: en-es-fr
+                                     local_rank: 0
+                                     mass_steps: []
+                                     master_port: -1
+                                     max_batch_size: 0
+                                     max_epoch: 100000
+                                     max_len: 100
+                                     max_vocab: 95000
+                                     min_count: 0
+                                     mlm_steps: []
+                                     mono_dataset: {}
+                                     mt_steps: [('en', 'es'), ('fr', 'es')]
+                                     multi_gpu: False
+                                     multi_node: False
+                                     n_gpu_per_node: 1
+                                     n_heads: 8
+                                     n_langs: 3
+                                     n_layers: 6
+                                     n_nodes: 1
+                                     node_id: 0
+                                     norm_emb: True
+                                     optimizer: adam_inverse_sqrt,beta1=0.9,beta2=0.98,lr=0.0001
+                                     para_dataset: {('en', 'es'): {'train': ('/data/bjji/github/data/en_es_fr/train.en-es.en.pth', '/data/bjji/github/data/en_es_fr/train.en-es.es.pth'), 'valid': ('/data/bjji/github/data/en_es_fr/valid.en-es.en.pth', '/data/bjji/github/data/en_es_fr/valid.en-es.es.pth'), 'test': ('/data/bjji/github/data/en_es_fr/test.en-es.en.pth', '/data/bjji/github/data/en_es_fr/test.en-es.es.pth')}, ('es', 'fr'): {'train': ('/data/bjji/github/data/en_es_fr/train.es-fr.es.pth', '/data/bjji/github/data/en_es_fr/train.es-fr.fr.pth'), 'valid': ('/data/bjji/github/data/en_es_fr/valid.es-fr.es.pth', '/data/bjji/github/data/en_es_fr/valid.es-fr.fr.pth'), 'test': ('/data/bjji/github/data/en_es_fr/test.es-fr.es.pth', '/data/bjji/github/data/en_es_fr/test.es-fr.fr.pth')}}
+                                     pc_steps: []
+                                     reload_emb: 
+                                     reload_model: /data/bjji/github/model/eurparl/tlm_base/tlm_en_fr_eurp_half/best-valid_mlm_ppl.pth,
+                                     reset_lang: en:0,fr:1,es:0
+                                     sample_alpha: 0
+                                     save_periodic: 1
+                                     share_inout_emb: True
+                                     sinusoidal_embeddings: False
+                                     split_data: False
+                                     stopping_criterion: valid_fr-es_mt_bleu,100
+                                     tokens_per_batch: 2500
+                                     validation_metrics: valid_fr-es_mt_bleu
+                                     word_blank: 0
+                                     word_dropout: 0
+                                     word_keep: 0.1
+                                     word_mask: 0.8
+                                     word_mask_keep_rand: 0.8,0.1,0.1
+                                     word_pred: 0.15
+                                     word_rand: 0.1
+                                     word_shuffle: 0
+                                     world_size: 1
+                                     zero_shot: {'es-fr', 'fr-es'}
+INFO - 06/15/19 13:18:18 - 0:00:00 - The experiment will be stored in /data/bjji/github/model/eurparl/tlm/en_es_fr
+                                     
+INFO - 06/15/19 13:18:18 - 0:00:00 - Running command: python train.py --local_rank=0 --dump_path '/data/bjji/github/model/eurparl' --exp_name tlm --exp_id en_es_fr --enc_layers 6 --data_path '/data/bjji/github/data/en_es_fr' --dec_layers 6 --emb_dim 1024 --lgs 'en-es-fr' --encoder_only False --mt_step 'en-es,fr-es' --n_layers 6 --n_heads 8 --dropout '0.1' --bptt 256 --tokens_per_batch 2500 --max_vocab 95000 --optimizer 'adam_inverse_sqrt,beta1=0.9,beta2=0.98,lr=0.0001' --epoch_size 500000 --eval_bleu True --stopping_criterion 'valid_fr-es_mt_bleu,100' --validation_metrics 'valid_fr-es_mt_bleu' --eval_type valid --eval_num '-1' --save_periodic 1 --beam_size 1 --fix_enc True --zero_shot fr es --reset_lang 'en:0,fr:1,es:0' --enc_langnum 2 --fix_enc True --gelu_activation true --attention_dropout '0.1' --reload_model '/data/bjji/github/model/eurparl/tlm_base/tlm_en_fr_eurp_half/best-valid_mlm_ppl.pth,'
+
+WARNING - 06/15/19 13:18:18 - 0:00:00 - Signal handler installed.
+
+INFO - 06/15/19 13:18:18 - 0:00:00 - ============ Parallel data (en-es)
+INFO - 06/15/19 13:18:18 - 0:00:00 - Loading data from /data/bjji/github/data/en_es_fr/train.en-es.en.pth ...
+INFO - 06/15/19 13:18:18 - 0:00:00 - 26242069 words (64139 unique) in 900000 sentences. 5 unknown words (3 unique) covering 0.00% of the data.
+INFO - 06/15/19 13:18:18 - 0:00:00 - Selecting 95000 most frequent words ...
+INFO - 06/15/19 13:18:18 - 0:00:00 - Maximum vocabulary size: 95000. Dictionary size: 64139 -> 64139 (removed 0 words).
+INFO - 06/15/19 13:18:18 - 0:00:00 - Now 5 unknown words covering 0.00% of the data.
+INFO - 06/15/19 13:18:18 - 0:00:00 - Loading data from /data/bjji/github/data/en_es_fr/train.en-es.es.pth ...
+INFO - 06/15/19 13:18:19 - 0:00:00 - 26695200 words (31805 unique) in 900000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
+INFO - 06/15/19 13:18:19 - 0:00:00 - Selecting 95000 most frequent words ...
+INFO - 06/15/19 13:18:19 - 0:00:00 - Maximum vocabulary size: 95000. Dictionary size: 31805 -> 31805 (removed 0 words).
+INFO - 06/15/19 13:18:19 - 0:00:01 - Now 0 unknown words covering 0.00% of the data.
+INFO - 06/15/19 13:18:19 - 0:00:01 - Removed 2950 empty sentences.
+INFO - 06/15/19 13:18:19 - 0:00:01 - Removed 0 empty sentences.
+INFO - 06/15/19 13:18:19 - 0:00:01 - Removed 5530 too long sentences.
+
+INFO - 06/15/19 13:18:20 - 0:00:01 - Loading data from /data/bjji/github/data/en_es_fr/valid.en-es.en.pth ...
+INFO - 06/15/19 13:18:20 - 0:00:01 - 60770 words (64139 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
+INFO - 06/15/19 13:18:20 - 0:00:01 - Selecting 95000 most frequent words ...
+INFO - 06/15/19 13:18:20 - 0:00:02 - Maximum vocabulary size: 95000. Dictionary size: 64139 -> 64139 (removed 0 words).
+INFO - 06/15/19 13:18:20 - 0:00:02 - Now 0 unknown words covering 0.00% of the data.
+INFO - 06/15/19 13:18:20 - 0:00:02 - Loading data from /data/bjji/github/data/en_es_fr/valid.en-es.es.pth ...
+INFO - 06/15/19 13:18:20 - 0:00:02 - 61999 words (31805 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
+INFO - 06/15/19 13:18:20 - 0:00:02 - Selecting 95000 most frequent words ...
+INFO - 06/15/19 13:18:20 - 0:00:02 - Maximum vocabulary size: 95000. Dictionary size: 31805 -> 31805 (removed 0 words).
+INFO - 06/15/19 13:18:20 - 0:00:02 - Now 0 unknown words covering 0.00% of the data.
+INFO - 06/15/19 13:18:20 - 0:00:02 - Removed 0 empty sentences.
+
+INFO - 06/15/19 13:18:20 - 0:00:02 - Loading data from /data/bjji/github/data/en_es_fr/test.en-es.en.pth ...
+INFO - 06/15/19 13:18:20 - 0:00:02 - 62080 words (64139 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
+INFO - 06/15/19 13:18:20 - 0:00:02 - Selecting 95000 most frequent words ...
+INFO - 06/15/19 13:18:20 - 0:00:02 - Maximum vocabulary size: 95000. Dictionary size: 64139 -> 64139 (removed 0 words).
+INFO - 06/15/19 13:18:20 - 0:00:02 - Now 0 unknown words covering 0.00% of the data.
+INFO - 06/15/19 13:18:20 - 0:00:02 - Loading data from /data/bjji/github/data/en_es_fr/test.en-es.es.pth ...
+INFO - 06/15/19 13:18:20 - 0:00:02 - 63495 words (31805 unique) in 2000 sentences. 2 unknown words (2 unique) covering 0.00% of the data.
+INFO - 06/15/19 13:18:20 - 0:00:02 - Selecting 95000 most frequent words ...
+INFO - 06/15/19 13:18:20 - 0:00:02 - Maximum vocabulary size: 95000. Dictionary size: 31805 -> 31805 (removed 0 words).
+INFO - 06/15/19 13:18:20 - 0:00:02 - Now 2 unknown words covering 0.00% of the data.
+INFO - 06/15/19 13:18:21 - 0:00:02 - Removed 0 empty sentences.
+
+INFO - 06/15/19 13:18:21 - 0:00:02 - ============ Parallel data (es-fr)
+INFO - 06/15/19 13:18:21 - 0:00:02 - Loading data from /data/bjji/github/data/en_es_fr/valid.es-fr.es.pth ...
+INFO - 06/15/19 13:18:21 - 0:00:02 - 61999 words (31805 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
+INFO - 06/15/19 13:18:21 - 0:00:02 - Selecting 95000 most frequent words ...
+INFO - 06/15/19 13:18:21 - 0:00:03 - Maximum vocabulary size: 95000. Dictionary size: 31805 -> 31805 (removed 0 words).
+INFO - 06/15/19 13:18:21 - 0:00:03 - Now 0 unknown words covering 0.00% of the data.
+INFO - 06/15/19 13:18:21 - 0:00:03 - Loading data from /data/bjji/github/data/en_es_fr/valid.es-fr.fr.pth ...
+INFO - 06/15/19 13:18:21 - 0:00:03 - 69330 words (64139 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
+INFO - 06/15/19 13:18:21 - 0:00:03 - Selecting 95000 most frequent words ...
+INFO - 06/15/19 13:18:21 - 0:00:03 - Maximum vocabulary size: 95000. Dictionary size: 64139 -> 64139 (removed 0 words).
+INFO - 06/15/19 13:18:21 - 0:00:03 - Now 0 unknown words covering 0.00% of the data.
+INFO - 06/15/19 13:18:21 - 0:00:03 - Removed 0 empty sentences.
+
+INFO - 06/15/19 13:18:21 - 0:00:03 - Loading data from /data/bjji/github/data/en_es_fr/test.es-fr.es.pth ...
+INFO - 06/15/19 13:18:21 - 0:00:03 - 63495 words (31805 unique) in 2000 sentences. 2 unknown words (2 unique) covering 0.00% of the data.
+INFO - 06/15/19 13:18:21 - 0:00:03 - Selecting 95000 most frequent words ...
+INFO - 06/15/19 13:18:21 - 0:00:03 - Maximum vocabulary size: 95000. Dictionary size: 31805 -> 31805 (removed 0 words).
+INFO - 06/15/19 13:18:21 - 0:00:03 - Now 2 unknown words covering 0.00% of the data.
+INFO - 06/15/19 13:18:21 - 0:00:03 - Loading data from /data/bjji/github/data/en_es_fr/test.es-fr.fr.pth ...
+INFO - 06/15/19 13:18:21 - 0:00:03 - 71195 words (64139 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
+INFO - 06/15/19 13:18:21 - 0:00:03 - Selecting 95000 most frequent words ...
+INFO - 06/15/19 13:18:21 - 0:00:03 - Maximum vocabulary size: 95000. Dictionary size: 64139 -> 64139 (removed 0 words).
+INFO - 06/15/19 13:18:21 - 0:00:03 - Now 0 unknown words covering 0.00% of the data.
+INFO - 06/15/19 13:18:21 - 0:00:03 - Removed 0 empty sentences.
+
+
+INFO - 06/15/19 13:18:21 - 0:00:03 - ============ Data summary
+INFO - 06/15/19 13:18:21 - 0:00:03 - Parallel data      - train -        en-es:    891520
+INFO - 06/15/19 13:18:21 - 0:00:03 - Parallel data      - valid -        en-es:      2000
+INFO - 06/15/19 13:18:21 - 0:00:03 - Parallel data      -  test -        en-es:      2000
+INFO - 06/15/19 13:18:21 - 0:00:03 - Parallel data      - valid -        es-fr:      2000
+INFO - 06/15/19 13:18:21 - 0:00:03 - Parallel data      -  test -        es-fr:      2000
+
+INFO - 06/15/19 13:18:32 - 0:00:14 - Reloading encoder from /data/bjji/github/model/eurparl/tlm_base/tlm_en_fr_eurp_half/best-valid_mlm_ppl.pth ...
+INFO - 06/15/19 13:18:36 - 0:00:18 - Number of parameters (encoder): 0
+INFO - 06/15/19 13:18:36 - 0:00:18 - Number of parameters (decoder): 133908541
+INFO - 06/15/19 13:18:36 - 0:00:18 - 64139
+INFO - 06/15/19 13:18:36 - 0:00:18 - 31805
+INFO - 06/15/19 13:18:36 - 0:00:18 - ####################################################################################################
+INFO - 06/15/19 13:18:39 - 0:00:21 - ============ Starting epoch 0 ... ============
+en es
+INFO - 06/15/19 13:18:39 - 0:00:21 - Creating new training data iterator (mt,en,es) ...
+INFO - 06/15/19 13:18:41 - 0:00:23 -       5 -   46.48 sent/s -  1608.10 words/s - MT-en-es: 10.9311 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:41 - 0:00:23 -      10 -  132.99 sent/s -  4928.86 words/s - MT-en-es: 10.9603 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:42 - 0:00:24 -      15 -   82.78 sent/s -  4943.64 words/s - MT-en-es: 10.9128 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:43 - 0:00:25 -      20 -  147.54 sent/s -  4683.60 words/s - MT-en-es: 10.8791 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:44 - 0:00:26 -      25 -  198.42 sent/s -  4680.07 words/s - MT-en-es: 10.8105 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:46 - 0:00:27 -      30 -  129.46 sent/s -  4884.93 words/s - MT-en-es: 10.7371 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:47 - 0:00:29 -      35 -  175.65 sent/s -  4738.75 words/s - MT-en-es: 10.6516 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:48 - 0:00:30 -      40 -  168.03 sent/s -  4663.21 words/s - MT-en-es: 10.5415 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:49 - 0:00:31 -      45 -  123.68 sent/s -  4898.56 words/s - MT-en-es: 10.3975 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:50 - 0:00:32 -      50 -  148.43 sent/s -  4853.95 words/s - MT-en-es: 10.3030 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:51 - 0:00:33 -      55 -  261.77 sent/s -  4534.42 words/s - MT-en-es: 10.2552 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:52 - 0:00:34 -      60 -  168.91 sent/s -  4643.08 words/s - MT-en-es: 10.1267 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:53 - 0:00:35 -      65 -  193.70 sent/s -  4751.94 words/s - MT-en-es:  9.9941 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:55 - 0:00:36 -      70 -  122.73 sent/s -  4763.65 words/s - MT-en-es:  9.7646 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:56 - 0:00:38 -      75 -  164.31 sent/s -  4605.00 words/s - MT-en-es:  9.6427 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 13:18:57 - 0:00:39 -      80 -  264.43 sent/s -  4470.60 words/s - MT-en-es:  9.5293 - Transformer LR = 1.0000e-07

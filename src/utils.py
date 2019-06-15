@@ -27,6 +27,19 @@ TRUTHY_STRINGS = {'on', 'true', '1'}
 DUMP_PATH = '/checkpoint/%s/dumped' % getpass.getuser()
 DYNAMIC_COEFF = ['lambda_clm', 'lambda_mlm', 'lambda_pc', 'lambda_ae', 'lambda_mt', 'lambda_bt']
 
+def reset_lang(params):
+
+
+    if len(params.reset_lang) ==0:
+        return
+    params.lang2id = {}
+    params.id2lang = {}
+    
+    for em in params.reset_lang.split(","):
+        lang, id  = em.split(":")[0], em.split(":")[1]
+        params.lang2id[lang] = int(id)
+        params.id2lang[int(id)] = lang
+
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):

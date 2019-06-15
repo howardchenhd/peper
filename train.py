@@ -12,7 +12,7 @@ from torch import nn
 
 from src.slurm import init_signal_handler, init_distributed_mode
 from src.data.loader import check_data_params, load_data
-from src.utils import bool_flag, initialize_exp, set_sampling_probs, shuf_order
+from src.utils import bool_flag, initialize_exp, set_sampling_probs, shuf_order, reset_lang
 from src.model import check_model_params, build_model
 from src.trainer import SingleTrainer, EncDecTrainer
 from src.evaluation.evaluator import SingleEvaluator, EncDecEvaluator
@@ -157,6 +157,8 @@ def get_parser():
                         help="MT coefficient")
     parser.add_argument("--lambda_bt", type=str, default="1",
                         help="BT coefficient")
+    parser.add_argument("--lambda_mass", type=str, default="1",
+                        help="MASS coefficient")
 
     # training steps
     parser.add_argument("--clm_steps", type=str, default="",
@@ -171,6 +173,10 @@ def get_parser():
                         help="Back-translation steps")
     parser.add_argument("--pc_steps", type=str, default="",
                         help="Parallel classification steps")
+    parser.add_argument("--mass_steps", type=str, default="",
+                        help="Mask Block piecess steps")
+
+
 
     # reload a pretrained model
     parser.add_argument("--reload_emb", type=str, default="",
@@ -205,24 +211,34 @@ def get_parser():
                         help="Master port (for multi-node SLURM jobs)")
     
     # freeze parameter
-    parser.add_argument("--fix_enc",type=bool_flag, default=True)
-    parser.add_argument("--fix_enc_emb",type=bool_flag, default=True)
+    parser.add_argument("--fix_enc",type=bool_flag, default=False)
+    parser.add_argument("--fix_enc_emb",type=bool_flag, default=False)
 
     # multilinual NMT
-    parser.add_argument("--enc_special", type=bool_flag, default=True,
+    parser.add_argument("--enc_special", type=bool_flag, default=False,
                         help="replace encoder <bos> with langid + 5")
-    parser.add_argument("--dec_special", type=bool_flag, default=True,
+    parser.add_argument("--dec_special", type=bool_flag, default=False,
                         help="replace decoder <bos> with langid + 5")
     parser.add_argument("--zero_shot", nargs='*', default=[],
                         help=" if given [es fr zh], the zero shot is es-fr es-zh fr-zh.")
     
     parser.add_argument("--eval_num",type=int,default=200)
     parser.add_argument("--eval_type",nargs="*",default=['valid'])
+    
+    #langid reset
+    parser.add_argument("--reset_lang",type=str,default="",
+                       help= "for transfer learning, eg. en:0,ch:1")
+    parser.add_argument("--enc_langnum",type=int,default=-1,
+                        help="Number of lang for encoder, when default=-1, enc_langnum == n_langs")
+    
+    
 
     return parser
 
 
 def main(params):
+
+    reset_lang(params)
 
     # initialize the multi-GPU / multi-node training
     init_distributed_mode(params)
@@ -311,6 +327,10 @@ def main(params):
             for lang1, lang2 in shuf_order(params.mlm_steps, params):
                 trainer.mlm_step(lang1, lang2, params.lambda_mlm)
 
+            # # MASS steps
+            # for lang1, lang2 in shuf_order(params.mass_step, params):
+            #     trainer.mass_step(lang1, lang2, params.lambda_mass)
+
             # parallel classification steps
             for lang1, lang2 in shuf_order(params.pc_steps, params):
                 trainer.pc_step(lang1, lang2, params.lambda_pc)
@@ -321,9 +341,9 @@ def main(params):
 
             # machine translation steps
             for lang1, lang2 in shuf_order(params.mt_steps, params):
-                if "{}-{}".format(lang1,lang2) in params.zero_shot:
+                if "{}-{}".format(lang1,lang2) not in params.zero_shot:
                     trainer.mt_step(lang1, lang2, params.lambda_mt)
-
+            
             # back-translation steps
             for lang1, lang2, lang3 in shuf_order(params.bt_steps):
                 trainer.bt_step(lang1, lang2, lang3, params.lambda_bt)

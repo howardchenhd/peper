@@ -174,12 +174,16 @@ def load_para_data(params, data):
 
     for src, tgt in params.para_dataset.keys():
 
+
         logger.info('============ Parallel data (%s-%s)' % (src, tgt))
 
         assert (src, tgt) not in data['para']
         data['para'][(src, tgt)] = {}
 
         for splt in ['train', 'valid', 'test']:
+            
+            if "{}-{}".format(src,tgt) in params.zero_shot and splt=='train':
+                continue
 
             # no need to load training data for evaluation
             if splt == 'train' and params.eval_only:
@@ -196,8 +200,9 @@ def load_para_data(params, data):
             tgt_data = load_binarized(tgt_path, params)
 
             # update dictionary parameters
-            set_dico_parameters(params, data, src_data['dico'], 'src')
-            set_dico_parameters(params, data, tgt_data['dico'], 'tgt')
+            if "{}-{}".format(src,tgt) not in params.zero_shot:
+                set_dico_parameters(params, data, src_data['dico'], 'src')
+                set_dico_parameters(params, data, tgt_data['dico'], 'tgt')
 
             # create ParallelDataset
             dataset = ParallelDataset(
@@ -253,6 +258,14 @@ def check_data_params(params):
     params.mlm_steps = [(s[0], None) if len(s) == 1 else tuple(s) for s in mlm_steps]
     assert all([(l1 in params.langs) and (l2 in params.langs or l2 is None) for l1, l2 in params.mlm_steps])
     assert len(params.mlm_steps) == len(set(params.mlm_steps))
+    
+
+    # MASS steps
+    params.mass_steps = [tuple(s.split('-')) for s in params.mass_steps.split(',') if len(s) > 0]
+    assert all([len(x) == 2 for x in params.mass_steps])
+    assert all([l1 in params.langs and l2 in params.langs for l1, l2 in params.mass_steps])
+    assert all([l1 != l2 for l1, l2 in params.mass_steps])
+    assert len(params.mass_steps) == len(set(params.mass_steps))
 
     # parallel classification steps
     params.pc_steps = [tuple(s.split('-')) for s in params.pc_steps.split(',') if len(s) > 0]
@@ -295,7 +308,10 @@ def check_data_params(params):
     assert all([all([os.path.isfile(p) for p in paths.values()]) for paths in params.mono_dataset.values()])
 
     # check parallel datasets
-    required_para_train = set(params.clm_steps + params.mlm_steps + params.pc_steps + params.mt_steps)
+    required_para_train = set(params.clm_steps + params.mlm_steps +\
+                              params.pc_steps + params.mt_steps +\
+                              params.mass_steps)
+    
     required_para = required_para_train | set([(l2, l3) for _, l2, l3 in params.bt_steps])
     params.para_dataset = {
         (src, tgt): {
@@ -307,7 +323,7 @@ def check_data_params(params):
         if src < tgt and ((src, tgt) in required_para or (tgt, src) in required_para)
     }
     #print(params.para_dataset.values(),"#"*20)
-    assert all([all([os.path.isfile(p1) and os.path.isfile(p2) for p1, p2 in paths.values()]) for paths in params.para_dataset.values()])
+    #assert all([all([os.path.isfile(p1) and os.path.isfile(p2) for p1, p2 in paths.values()]) for paths in params.para_dataset.values()])
     #for paths in params.para_dataset.values():
     #    for p1, p2 in paths.values():
     #        assert os.path.isfile(p1), p1
@@ -320,8 +336,8 @@ def check_data_params(params):
     if len(params.zero_shot) > 0:
         zero_shot = sorted(params.zero_shot)
         assert len(set(zero_shot)) == len(zero_shot)
-        zero_shot = set([ "{}-{}".format(lang1,lang2) if lang1!=lang2 for lang1 in zero_shot for lang2 in zero_shot])
-
+        zero_shot = set([ "{}-{}".format(lang1,lang2) for lang1 in zero_shot for lang2 in zero_shot  if lang1!=lang2])
+        params.zero_shot = zero_shot
 
 def load_data(params):
     """
