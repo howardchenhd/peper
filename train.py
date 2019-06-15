@@ -157,7 +157,7 @@ def get_parser():
                         help="MT coefficient")
     parser.add_argument("--lambda_bt", type=str, default="1",
                         help="BT coefficient")
-    parser.add_argument("--lambda_mass", type=str, default="1",
+    parser.add_argument("--lambda_mass", type=float, default=1,
                         help="MASS coefficient")
 
     # training steps
@@ -173,10 +173,13 @@ def get_parser():
                         help="Back-translation steps")
     parser.add_argument("--pc_steps", type=str, default="",
                         help="Parallel classification steps")
+
     parser.add_argument("--mass_steps", type=str, default="",
                         help="Mask Block piecess steps")
-
-
+    parser.add_argument("--mass_type", type=str, default="block",
+                        help="choice:['shuffle' , 'fill' ,'block']")
+    parser.add_argument("--block_size", type=float, default=0.5,
+                        help="windows size for mass block type")
 
     # reload a pretrained model
     parser.add_argument("--reload_emb", type=str, default="",
@@ -254,7 +257,7 @@ def main(params):
 
     # build model
     if params.encoder_only:
-        model = build_model(params, data['dico'])
+        model = build_model(params, data['dico']['src'])
     else:
         encoder, decoder = build_model(params, data['dico'])
 
@@ -284,9 +287,6 @@ def main(params):
                 encoder = nn.parallel.DistributedDataParallel(encoder, device_ids=[params.local_rank], output_device=params.local_rank, broadcast_buffers=True)
                 decoder = nn.parallel.DistributedDataParallel(decoder, device_ids=[params.local_rank], output_device=params.local_rank, broadcast_buffers=True)
 
-    logger.info(len(encoder.dico))
-    logger.info((len(decoder.dico)))
-    logger.info("#" * 100)
 
     # build trainer, reload potential checkpoints / build evaluator
     if params.encoder_only:
@@ -328,8 +328,8 @@ def main(params):
                 trainer.mlm_step(lang1, lang2, params.lambda_mlm)
 
             # # MASS steps
-            # for lang1, lang2 in shuf_order(params.mass_step, params):
-            #     trainer.mass_step(lang1, lang2, params.lambda_mass)
+            for lang1, lang2 in shuf_order(params.mass_steps, params):
+                trainer.mass_step(lang1, lang2, params.lambda_mass)
 
             # parallel classification steps
             for lang1, lang2 in shuf_order(params.pc_steps, params):

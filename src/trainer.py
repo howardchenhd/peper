@@ -17,7 +17,8 @@ from torch.nn.utils import clip_grad_norm_
 
 from .utils import get_optimizer, to_cuda, concat_batches
 from .utils import parse_lambda_config, update_lambdas
-
+import random
+import pdb
 
 logger = getLogger()
 
@@ -85,7 +86,9 @@ class Trainer(object):
             [('PC-%s-%s' % (l1, l2), []) for l1, l2 in params.pc_steps] +
             [('AE-%s' % lang, []) for lang in params.ae_steps] +
             [('MT-%s-%s' % (l1, l2), []) for l1, l2 in params.mt_steps] +
-            [('BT-%s-%s-%s' % (l1, l2, l3), []) for l1, l2, l3 in params.bt_steps]
+            [('BT-%s-%s-%s' % (l1, l2, l3), []) for l1, l2, l3 in params.bt_steps] +
+            [('MA-%s-%s' % (l1, l2), []) for l1, l2 in params.mass_steps]
+
         )
         self.last_time = time.time()
 
@@ -347,7 +350,7 @@ class Trainer(object):
 
         # do not predict padding
         pred_mask[x == params.pad_index] = 0
-        pred_mask[0] = 0  # TODO: remove
+        pred_mask[x == params.eos_index] = 0  # TODO: remove
 
         # mask a number of words == 0 [8] (faster with fp16)
         if params.fp16:
@@ -395,6 +398,74 @@ class Trainer(object):
             x, lengths, positions, langs = concat_batches(x1, len1, lang1_id, x2, len2, lang2_id, params.pad_index, params.eos_index, reset_positions=True)
 
         return x, lengths, positions, langs, (None, None) if lang2 is None else (len1, len2)
+
+
+    def generate_batch_with_src_mask(self, lang1, lang2, name, type='shuffle'):
+        """
+        Prepare a batch (for causal or non-causal mode).
+
+        type: 'shuffle' 'fill' 'block'
+        """
+        params = self.params
+        assert lang1 and lang2
+        assert type in ['shuffle' , 'fill' ,'block']
+
+        lang1_id = params.lang2id[lang1]
+        lang2_id = params.lang2id[lang2]
+
+        (x1, len1), (x2, len2) = self.get_batch(name, lang1, lang2)
+
+        if type == 'fill':
+            x1, y1, pred_mask = self.mask_out(x1, len1)
+
+        elif type == 'block':
+            x1, y1, pred_mask = self.mask_block(x1, len1)
+
+        elif type == 'shuffle':
+            x1, len1 = self.add_noise(x1, len1)
+            alen = torch.arange(len1.max(), dtype=torch.long, device=len2.device)
+            pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
+            y1 = x1[1:].masked_select(pred_mask[:-1])
+
+
+        max_len = (len1 + len2).max().item()
+        bsz = x1.size(1)
+
+        real_pred_mask = pred_mask.new(max_len, bsz).fill_(0)
+        real_pred_mask[:len1.max(), :].copy_(pred_mask)
+        # pdb.set_trace()
+        x, lengths, positions, langs = concat_batches(x1, len1, lang1_id, x2, len2, lang2_id, params.pad_index,
+                                                      params.eos_index, reset_positions=True)
+        assert real_pred_mask.size() == x.size()
+        return x, lengths, positions, langs, y1, real_pred_mask
+
+
+    def mask_block(self, x, len1):
+
+        params = self.params
+        slen, bs = x.size()
+        pred_mask = x.data.new(x.size()).fill_(0).byte()
+
+        for i in range(bs):
+            length = len1[i].item() - 2
+
+            if length == 1:
+                pred_mask[1, i] = 1
+                continue
+
+            start = random.randint(1,length)
+            end = start + int(params.block_size * length)
+
+            if end > length + 1:
+                end = length + 1
+            pred_mask[start:end, i] = 1
+
+        _x_real = x[pred_mask]
+        x[pred_mask] = params.mask_index
+
+        assert  (x==params.eos_index).long().sum().item() == 2 * bs , x #"{} {}".format((x==params.eos_index).long().sum().item() ,2*bs)
+        return x, _x_real, pred_mask
+
 
     def save_model(self, name):
         """
@@ -622,6 +693,39 @@ class Trainer(object):
         tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
         _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
         self.stats[('MLM-%s' % lang1) if lang2 is None else ('MLM-%s-%s' % (lang1, lang2))].append(loss.item())
+        loss = lambda_coeff * loss
+
+        # optimize
+        self.optimize(loss, name)
+
+        # number of processed sentences / words
+        self.n_sentences += params.batch_size
+        self.stats['processed_s'] += lengths.size(0)
+        self.stats['processed_w'] += pred_mask.sum().item()
+
+    def mass_step(self, lang1, lang2, lambda_coeff):
+        """
+        Masked word prediction step.
+        MLM objective is lang2 is None, TLM objective otherwise.
+        """
+        assert lambda_coeff >= 0
+        if lambda_coeff == 0:
+            return
+        params = self.params
+        name = 'model' if params.encoder_only else 'encoder'
+        model = getattr(self, name)
+        model.train()
+
+        # generate batch / select words to predict
+        x, lengths, positions, langs, y, pred_mask = self.generate_batch_with_src_mask(lang1, lang2, 'pred', type= params.mass_type)
+
+        # cuda
+        x, y, pred_mask, lengths, positions, langs = to_cuda(x, y, pred_mask, lengths, positions, langs)
+
+        # forward / loss
+        tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
+        _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
+        self.stats[('MA-%s-%s' % (lang1, lang2))].append(loss.item())
         loss = lambda_coeff * loss
 
         # optimize

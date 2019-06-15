@@ -1,55 +1,45 @@
 nohup: ignoring input
-SLURM job: False
-0 - Number of nodes: 1
-0 - Node ID        : 0
-0 - Local rank     : 0
-0 - Global rank    : 0
-0 - World size     : 1
-0 - GPUs per node  : 1
-0 - Master         : True
-0 - Multi-node     : False
-0 - Multi-GPU      : False
-0 - Hostname       : amax
-INFO - 06/15/19 13:18:18 - 0:00:00 - ============ Initialized logger ============
-INFO - 06/15/19 13:18:18 - 0:00:00 - ae_steps: []
+INFO - 06/15/19 22:19:17 - 0:00:00 - ============ Initialized logger ============
+INFO - 06/15/19 22:19:17 - 0:00:00 - ae_steps: []
                                      asm: False
                                      attention_dropout: 0.1
                                      batch_size: 32
                                      beam_size: 1
+                                     block_size: 0.5
                                      bptt: 256
                                      bt_src_langs: []
                                      bt_steps: []
                                      clip_grad_norm: 5
                                      clm_steps: []
-                                     command: python train.py --local_rank=0 --dump_path '/data/bjji/github/model/eurparl' --exp_name tlm --exp_id en_es_fr --enc_layers 6 --data_path '/data/bjji/github/data/en_es_fr' --dec_layers 6 --emb_dim 1024 --lgs 'en-es-fr' --encoder_only False --mt_step 'en-es,fr-es' --n_layers 6 --n_heads 8 --dropout '0.1' --bptt 256 --tokens_per_batch 2500 --max_vocab 95000 --optimizer 'adam_inverse_sqrt,beta1=0.9,beta2=0.98,lr=0.0001' --epoch_size 500000 --eval_bleu True --stopping_criterion 'valid_fr-es_mt_bleu,100' --validation_metrics 'valid_fr-es_mt_bleu' --eval_type valid --eval_num '-1' --save_periodic 1 --beam_size 1 --fix_enc True --zero_shot fr es --reset_lang 'en:0,fr:1,es:0' --enc_langnum 2 --fix_enc True --gelu_activation true --attention_dropout '0.1' --reload_model '/data/bjji/github/model/eurparl/tlm_base/tlm_en_fr_eurp_half/best-valid_mlm_ppl.pth,' --exp_id "en_es_fr"
+                                     command: python train.py --exp_name test_deen_mlm --dump_path '../dumped/' --data_path '/data4/bjji/source/github/data/tlm/en_de' --lgs 'de-en' --emb_dim 1024 --n_layers 6 --n_heads 8 --dropout '0.1' --attention_dropout '0.1' --gelu_activation true --batch_size 32 --bptt 256 --optimizer 'adam,lr=0.0001' --epoch_size 200000 --validation_metrics 'valid_en-de_mlm_acc' --mass_steps 'de-en,en-de' --mass_type block --block_size '0.5' --reload_model '/data4/bjji/source/github/model/mlm_base/mlm_ende_1024.pth' --stopping_criterion 'valid_en-de_mlm_acc,20' --save_periodic 1 --exp_id "nepkuyf8i0"
                                      context_size: 0
-                                     data_path: /data/bjji/github/data/en_es_fr
+                                     data_path: /data4/bjji/source/github/data/tlm/en_de
                                      debug_slurm: False
                                      debug_train: False
-                                     dec_layers: 6
+                                     dec_layers: 0
                                      dec_special: False
                                      dropout: 0.1
-                                     dump_path: /data/bjji/github/model/eurparl/tlm/en_es_fr
+                                     dump_path: ../dumped/test_deen_mlm/nepkuyf8i0
                                      early_stopping: False
                                      emb_dim: 1024
-                                     enc_langnum: 2
-                                     enc_layers: 6
+                                     enc_langnum: -1
+                                     enc_layers: 0
                                      enc_special: False
-                                     encoder_only: False
-                                     epoch_size: 500000
-                                     eval_bleu: True
-                                     eval_num: -1
+                                     encoder_only: True
+                                     epoch_size: 200000
+                                     eval_bleu: False
+                                     eval_num: 200
                                      eval_only: False
                                      eval_type: ['valid']
-                                     exp_id: en_es_fr
-                                     exp_name: tlm
-                                     fix_enc: True
+                                     exp_id: nepkuyf8i0
+                                     exp_name: test_deen_mlm
+                                     fix_enc: False
                                      fix_enc_emb: False
                                      fp16: False
                                      gelu_activation: True
                                      global_rank: 0
                                      group_by_size: True
-                                     id2lang: {0: 'es', 1: 'fr'}
+                                     id2lang: {0: 'de', 1: 'en'}
                                      is_master: True
                                      is_slurm_job: False
                                      lambda_ae: 1
@@ -59,46 +49,47 @@ INFO - 06/15/19 13:18:18 - 0:00:00 - ae_steps: []
                                      lambda_mlm: 1
                                      lambda_mt: 1
                                      lambda_pc: 1
-                                     lang2id: {'en': 0, 'fr': 1, 'es': 0}
+                                     lang2id: {'de': 0, 'en': 1}
                                      lang_emb: True
-                                     langs: ['en', 'es', 'fr']
+                                     langs: ['de', 'en']
                                      length_penalty: 1
                                      lg_sampling_factor: -1
-                                     lgs: en-es-fr
+                                     lgs: de-en
                                      local_rank: 0
-                                     mass_steps: []
+                                     mass_steps: [('de', 'en'), ('en', 'de')]
+                                     mass_type: block
                                      master_port: -1
                                      max_batch_size: 0
                                      max_epoch: 100000
                                      max_len: 100
-                                     max_vocab: 95000
+                                     max_vocab: -1
                                      min_count: 0
                                      mlm_steps: []
                                      mono_dataset: {}
-                                     mt_steps: [('en', 'es'), ('fr', 'es')]
+                                     mt_steps: []
                                      multi_gpu: False
                                      multi_node: False
                                      n_gpu_per_node: 1
                                      n_heads: 8
-                                     n_langs: 3
+                                     n_langs: 2
                                      n_layers: 6
                                      n_nodes: 1
                                      node_id: 0
                                      norm_emb: True
-                                     optimizer: adam_inverse_sqrt,beta1=0.9,beta2=0.98,lr=0.0001
-                                     para_dataset: {('en', 'es'): {'train': ('/data/bjji/github/data/en_es_fr/train.en-es.en.pth', '/data/bjji/github/data/en_es_fr/train.en-es.es.pth'), 'valid': ('/data/bjji/github/data/en_es_fr/valid.en-es.en.pth', '/data/bjji/github/data/en_es_fr/valid.en-es.es.pth'), 'test': ('/data/bjji/github/data/en_es_fr/test.en-es.en.pth', '/data/bjji/github/data/en_es_fr/test.en-es.es.pth')}, ('es', 'fr'): {'train': ('/data/bjji/github/data/en_es_fr/train.es-fr.es.pth', '/data/bjji/github/data/en_es_fr/train.es-fr.fr.pth'), 'valid': ('/data/bjji/github/data/en_es_fr/valid.es-fr.es.pth', '/data/bjji/github/data/en_es_fr/valid.es-fr.fr.pth'), 'test': ('/data/bjji/github/data/en_es_fr/test.es-fr.es.pth', '/data/bjji/github/data/en_es_fr/test.es-fr.fr.pth')}}
+                                     optimizer: adam,lr=0.0001
+                                     para_dataset: {('de', 'en'): {'train': ('/data4/bjji/source/github/data/tlm/en_de/train.de-en.de.pth', '/data4/bjji/source/github/data/tlm/en_de/train.de-en.en.pth'), 'valid': ('/data4/bjji/source/github/data/tlm/en_de/valid.de-en.de.pth', '/data4/bjji/source/github/data/tlm/en_de/valid.de-en.en.pth'), 'test': ('/data4/bjji/source/github/data/tlm/en_de/test.de-en.de.pth', '/data4/bjji/source/github/data/tlm/en_de/test.de-en.en.pth')}}
                                      pc_steps: []
                                      reload_emb: 
-                                     reload_model: /data/bjji/github/model/eurparl/tlm_base/tlm_en_fr_eurp_half/best-valid_mlm_ppl.pth,
-                                     reset_lang: en:0,fr:1,es:0
+                                     reload_model: /data4/bjji/source/github/model/mlm_base/mlm_ende_1024.pth
+                                     reset_lang: 
                                      sample_alpha: 0
                                      save_periodic: 1
                                      share_inout_emb: True
                                      sinusoidal_embeddings: False
                                      split_data: False
-                                     stopping_criterion: valid_fr-es_mt_bleu,100
-                                     tokens_per_batch: 2500
-                                     validation_metrics: valid_fr-es_mt_bleu
+                                     stopping_criterion: valid_en-de_mlm_acc,20
+                                     tokens_per_batch: -1
+                                     validation_metrics: valid_en-de_mlm_acc
                                      word_blank: 0
                                      word_dropout: 0
                                      word_keep: 0.1
@@ -108,107 +99,610 @@ INFO - 06/15/19 13:18:18 - 0:00:00 - ae_steps: []
                                      word_rand: 0.1
                                      word_shuffle: 0
                                      world_size: 1
-                                     zero_shot: {'es-fr', 'fr-es'}
-INFO - 06/15/19 13:18:18 - 0:00:00 - The experiment will be stored in /data/bjji/github/model/eurparl/tlm/en_es_fr
+                                     zero_shot: []
+INFO - 06/15/19 22:19:17 - 0:00:00 - The experiment will be stored in ../dumped/test_deen_mlm/nepkuyf8i0
                                      
-INFO - 06/15/19 13:18:18 - 0:00:00 - Running command: python train.py --local_rank=0 --dump_path '/data/bjji/github/model/eurparl' --exp_name tlm --exp_id en_es_fr --enc_layers 6 --data_path '/data/bjji/github/data/en_es_fr' --dec_layers 6 --emb_dim 1024 --lgs 'en-es-fr' --encoder_only False --mt_step 'en-es,fr-es' --n_layers 6 --n_heads 8 --dropout '0.1' --bptt 256 --tokens_per_batch 2500 --max_vocab 95000 --optimizer 'adam_inverse_sqrt,beta1=0.9,beta2=0.98,lr=0.0001' --epoch_size 500000 --eval_bleu True --stopping_criterion 'valid_fr-es_mt_bleu,100' --validation_metrics 'valid_fr-es_mt_bleu' --eval_type valid --eval_num '-1' --save_periodic 1 --beam_size 1 --fix_enc True --zero_shot fr es --reset_lang 'en:0,fr:1,es:0' --enc_langnum 2 --fix_enc True --gelu_activation true --attention_dropout '0.1' --reload_model '/data/bjji/github/model/eurparl/tlm_base/tlm_en_fr_eurp_half/best-valid_mlm_ppl.pth,'
+INFO - 06/15/19 22:19:17 - 0:00:00 - Running command: python train.py --exp_name test_deen_mlm --dump_path '../dumped/' --data_path '/data4/bjji/source/github/data/tlm/en_de' --lgs 'de-en' --emb_dim 1024 --n_layers 6 --n_heads 8 --dropout '0.1' --attention_dropout '0.1' --gelu_activation true --batch_size 32 --bptt 256 --optimizer 'adam,lr=0.0001' --epoch_size 200000 --validation_metrics 'valid_en-de_mlm_acc' --mass_steps 'de-en,en-de' --mass_type block --block_size '0.5' --reload_model '/data4/bjji/source/github/model/mlm_base/mlm_ende_1024.pth' --stopping_criterion 'valid_en-de_mlm_acc,20' --save_periodic 1
 
-WARNING - 06/15/19 13:18:18 - 0:00:00 - Signal handler installed.
+WARNING - 06/15/19 22:19:17 - 0:00:00 - Signal handler installed.
 
-INFO - 06/15/19 13:18:18 - 0:00:00 - ============ Parallel data (en-es)
-INFO - 06/15/19 13:18:18 - 0:00:00 - Loading data from /data/bjji/github/data/en_es_fr/train.en-es.en.pth ...
-INFO - 06/15/19 13:18:18 - 0:00:00 - 26242069 words (64139 unique) in 900000 sentences. 5 unknown words (3 unique) covering 0.00% of the data.
-INFO - 06/15/19 13:18:18 - 0:00:00 - Selecting 95000 most frequent words ...
-INFO - 06/15/19 13:18:18 - 0:00:00 - Maximum vocabulary size: 95000. Dictionary size: 64139 -> 64139 (removed 0 words).
-INFO - 06/15/19 13:18:18 - 0:00:00 - Now 5 unknown words covering 0.00% of the data.
-INFO - 06/15/19 13:18:18 - 0:00:00 - Loading data from /data/bjji/github/data/en_es_fr/train.en-es.es.pth ...
-INFO - 06/15/19 13:18:19 - 0:00:00 - 26695200 words (31805 unique) in 900000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
-INFO - 06/15/19 13:18:19 - 0:00:00 - Selecting 95000 most frequent words ...
-INFO - 06/15/19 13:18:19 - 0:00:00 - Maximum vocabulary size: 95000. Dictionary size: 31805 -> 31805 (removed 0 words).
-INFO - 06/15/19 13:18:19 - 0:00:01 - Now 0 unknown words covering 0.00% of the data.
-INFO - 06/15/19 13:18:19 - 0:00:01 - Removed 2950 empty sentences.
-INFO - 06/15/19 13:18:19 - 0:00:01 - Removed 0 empty sentences.
-INFO - 06/15/19 13:18:19 - 0:00:01 - Removed 5530 too long sentences.
+INFO - 06/15/19 22:19:17 - 0:00:00 - ============ Parallel data (de-en)
+INFO - 06/15/19 22:19:17 - 0:00:00 - Loading data from /data4/bjji/source/github/data/tlm/en_de/train.de-en.de.pth ...
+INFO - 06/15/19 22:19:17 - 0:00:00 - 27269114 words (64699 unique) in 900000 sentences. 4 unknown words (2 unique) covering 0.00% of the data.
+INFO - 06/15/19 22:19:17 - 0:00:00 - Loading data from /data4/bjji/source/github/data/tlm/en_de/train.de-en.en.pth ...
+INFO - 06/15/19 22:19:17 - 0:00:00 - 25969863 words (64699 unique) in 900000 sentences. 2 unknown words (1 unique) covering 0.00% of the data.
+INFO - 06/15/19 22:19:17 - 0:00:00 - Removed 3570 empty sentences.
+INFO - 06/15/19 22:19:18 - 0:00:01 - Removed 0 empty sentences.
+INFO - 06/15/19 22:19:18 - 0:00:01 - Removed 5665 too long sentences.
 
-INFO - 06/15/19 13:18:20 - 0:00:01 - Loading data from /data/bjji/github/data/en_es_fr/valid.en-es.en.pth ...
-INFO - 06/15/19 13:18:20 - 0:00:01 - 60770 words (64139 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
-INFO - 06/15/19 13:18:20 - 0:00:01 - Selecting 95000 most frequent words ...
-INFO - 06/15/19 13:18:20 - 0:00:02 - Maximum vocabulary size: 95000. Dictionary size: 64139 -> 64139 (removed 0 words).
-INFO - 06/15/19 13:18:20 - 0:00:02 - Now 0 unknown words covering 0.00% of the data.
-INFO - 06/15/19 13:18:20 - 0:00:02 - Loading data from /data/bjji/github/data/en_es_fr/valid.en-es.es.pth ...
-INFO - 06/15/19 13:18:20 - 0:00:02 - 61999 words (31805 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
-INFO - 06/15/19 13:18:20 - 0:00:02 - Selecting 95000 most frequent words ...
-INFO - 06/15/19 13:18:20 - 0:00:02 - Maximum vocabulary size: 95000. Dictionary size: 31805 -> 31805 (removed 0 words).
-INFO - 06/15/19 13:18:20 - 0:00:02 - Now 0 unknown words covering 0.00% of the data.
-INFO - 06/15/19 13:18:20 - 0:00:02 - Removed 0 empty sentences.
+INFO - 06/15/19 22:19:18 - 0:00:01 - Loading data from /data4/bjji/source/github/data/tlm/en_de/valid.de-en.de.pth ...
+INFO - 06/15/19 22:19:18 - 0:00:01 - 62393 words (64699 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
+INFO - 06/15/19 22:19:18 - 0:00:01 - Loading data from /data4/bjji/source/github/data/tlm/en_de/valid.de-en.en.pth ...
+INFO - 06/15/19 22:19:18 - 0:00:01 - 61362 words (64699 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
+INFO - 06/15/19 22:19:19 - 0:00:02 - Removed 0 empty sentences.
 
-INFO - 06/15/19 13:18:20 - 0:00:02 - Loading data from /data/bjji/github/data/en_es_fr/test.en-es.en.pth ...
-INFO - 06/15/19 13:18:20 - 0:00:02 - 62080 words (64139 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
-INFO - 06/15/19 13:18:20 - 0:00:02 - Selecting 95000 most frequent words ...
-INFO - 06/15/19 13:18:20 - 0:00:02 - Maximum vocabulary size: 95000. Dictionary size: 64139 -> 64139 (removed 0 words).
-INFO - 06/15/19 13:18:20 - 0:00:02 - Now 0 unknown words covering 0.00% of the data.
-INFO - 06/15/19 13:18:20 - 0:00:02 - Loading data from /data/bjji/github/data/en_es_fr/test.en-es.es.pth ...
-INFO - 06/15/19 13:18:20 - 0:00:02 - 63495 words (31805 unique) in 2000 sentences. 2 unknown words (2 unique) covering 0.00% of the data.
-INFO - 06/15/19 13:18:20 - 0:00:02 - Selecting 95000 most frequent words ...
-INFO - 06/15/19 13:18:20 - 0:00:02 - Maximum vocabulary size: 95000. Dictionary size: 31805 -> 31805 (removed 0 words).
-INFO - 06/15/19 13:18:20 - 0:00:02 - Now 2 unknown words covering 0.00% of the data.
-INFO - 06/15/19 13:18:21 - 0:00:02 - Removed 0 empty sentences.
-
-INFO - 06/15/19 13:18:21 - 0:00:02 - ============ Parallel data (es-fr)
-INFO - 06/15/19 13:18:21 - 0:00:02 - Loading data from /data/bjji/github/data/en_es_fr/valid.es-fr.es.pth ...
-INFO - 06/15/19 13:18:21 - 0:00:02 - 61999 words (31805 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
-INFO - 06/15/19 13:18:21 - 0:00:02 - Selecting 95000 most frequent words ...
-INFO - 06/15/19 13:18:21 - 0:00:03 - Maximum vocabulary size: 95000. Dictionary size: 31805 -> 31805 (removed 0 words).
-INFO - 06/15/19 13:18:21 - 0:00:03 - Now 0 unknown words covering 0.00% of the data.
-INFO - 06/15/19 13:18:21 - 0:00:03 - Loading data from /data/bjji/github/data/en_es_fr/valid.es-fr.fr.pth ...
-INFO - 06/15/19 13:18:21 - 0:00:03 - 69330 words (64139 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
-INFO - 06/15/19 13:18:21 - 0:00:03 - Selecting 95000 most frequent words ...
-INFO - 06/15/19 13:18:21 - 0:00:03 - Maximum vocabulary size: 95000. Dictionary size: 64139 -> 64139 (removed 0 words).
-INFO - 06/15/19 13:18:21 - 0:00:03 - Now 0 unknown words covering 0.00% of the data.
-INFO - 06/15/19 13:18:21 - 0:00:03 - Removed 0 empty sentences.
-
-INFO - 06/15/19 13:18:21 - 0:00:03 - Loading data from /data/bjji/github/data/en_es_fr/test.es-fr.es.pth ...
-INFO - 06/15/19 13:18:21 - 0:00:03 - 63495 words (31805 unique) in 2000 sentences. 2 unknown words (2 unique) covering 0.00% of the data.
-INFO - 06/15/19 13:18:21 - 0:00:03 - Selecting 95000 most frequent words ...
-INFO - 06/15/19 13:18:21 - 0:00:03 - Maximum vocabulary size: 95000. Dictionary size: 31805 -> 31805 (removed 0 words).
-INFO - 06/15/19 13:18:21 - 0:00:03 - Now 2 unknown words covering 0.00% of the data.
-INFO - 06/15/19 13:18:21 - 0:00:03 - Loading data from /data/bjji/github/data/en_es_fr/test.es-fr.fr.pth ...
-INFO - 06/15/19 13:18:21 - 0:00:03 - 71195 words (64139 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
-INFO - 06/15/19 13:18:21 - 0:00:03 - Selecting 95000 most frequent words ...
-INFO - 06/15/19 13:18:21 - 0:00:03 - Maximum vocabulary size: 95000. Dictionary size: 64139 -> 64139 (removed 0 words).
-INFO - 06/15/19 13:18:21 - 0:00:03 - Now 0 unknown words covering 0.00% of the data.
-INFO - 06/15/19 13:18:21 - 0:00:03 - Removed 0 empty sentences.
+INFO - 06/15/19 22:19:19 - 0:00:02 - Loading data from /data4/bjji/source/github/data/tlm/en_de/test.de-en.de.pth ...
+INFO - 06/15/19 22:19:19 - 0:00:02 - 63896 words (64699 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
+INFO - 06/15/19 22:19:19 - 0:00:02 - Loading data from /data4/bjji/source/github/data/tlm/en_de/test.de-en.en.pth ...
+INFO - 06/15/19 22:19:19 - 0:00:02 - 62798 words (64699 unique) in 2000 sentences. 0 unknown words (0 unique) covering 0.00% of the data.
+INFO - 06/15/19 22:19:19 - 0:00:02 - Removed 0 empty sentences.
 
 
-INFO - 06/15/19 13:18:21 - 0:00:03 - ============ Data summary
-INFO - 06/15/19 13:18:21 - 0:00:03 - Parallel data      - train -        en-es:    891520
-INFO - 06/15/19 13:18:21 - 0:00:03 - Parallel data      - valid -        en-es:      2000
-INFO - 06/15/19 13:18:21 - 0:00:03 - Parallel data      -  test -        en-es:      2000
-INFO - 06/15/19 13:18:21 - 0:00:03 - Parallel data      - valid -        es-fr:      2000
-INFO - 06/15/19 13:18:21 - 0:00:03 - Parallel data      -  test -        es-fr:      2000
+INFO - 06/15/19 22:19:19 - 0:00:02 - ============ Data summary
+INFO - 06/15/19 22:19:19 - 0:00:02 - Parallel data      - train -        de-en:    890765
+INFO - 06/15/19 22:19:19 - 0:00:02 - Parallel data      - valid -        de-en:      2000
+INFO - 06/15/19 22:19:19 - 0:00:02 - Parallel data      -  test -        de-en:      2000
 
-INFO - 06/15/19 13:18:32 - 0:00:14 - Reloading encoder from /data/bjji/github/model/eurparl/tlm_base/tlm_en_fr_eurp_half/best-valid_mlm_ppl.pth ...
-INFO - 06/15/19 13:18:36 - 0:00:18 - Number of parameters (encoder): 0
-INFO - 06/15/19 13:18:36 - 0:00:18 - Number of parameters (decoder): 133908541
-INFO - 06/15/19 13:18:36 - 0:00:18 - 64139
-INFO - 06/15/19 13:18:36 - 0:00:18 - 31805
-INFO - 06/15/19 13:18:36 - 0:00:18 - ####################################################################################################
-INFO - 06/15/19 13:18:39 - 0:00:21 - ============ Starting epoch 0 ... ============
-en es
-INFO - 06/15/19 13:18:39 - 0:00:21 - Creating new training data iterator (mt,en,es) ...
-INFO - 06/15/19 13:18:41 - 0:00:23 -       5 -   46.48 sent/s -  1608.10 words/s - MT-en-es: 10.9311 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:41 - 0:00:23 -      10 -  132.99 sent/s -  4928.86 words/s - MT-en-es: 10.9603 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:42 - 0:00:24 -      15 -   82.78 sent/s -  4943.64 words/s - MT-en-es: 10.9128 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:43 - 0:00:25 -      20 -  147.54 sent/s -  4683.60 words/s - MT-en-es: 10.8791 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:44 - 0:00:26 -      25 -  198.42 sent/s -  4680.07 words/s - MT-en-es: 10.8105 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:46 - 0:00:27 -      30 -  129.46 sent/s -  4884.93 words/s - MT-en-es: 10.7371 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:47 - 0:00:29 -      35 -  175.65 sent/s -  4738.75 words/s - MT-en-es: 10.6516 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:48 - 0:00:30 -      40 -  168.03 sent/s -  4663.21 words/s - MT-en-es: 10.5415 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:49 - 0:00:31 -      45 -  123.68 sent/s -  4898.56 words/s - MT-en-es: 10.3975 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:50 - 0:00:32 -      50 -  148.43 sent/s -  4853.95 words/s - MT-en-es: 10.3030 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:51 - 0:00:33 -      55 -  261.77 sent/s -  4534.42 words/s - MT-en-es: 10.2552 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:52 - 0:00:34 -      60 -  168.91 sent/s -  4643.08 words/s - MT-en-es: 10.1267 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:53 - 0:00:35 -      65 -  193.70 sent/s -  4751.94 words/s - MT-en-es:  9.9941 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:55 - 0:00:36 -      70 -  122.73 sent/s -  4763.65 words/s - MT-en-es:  9.7646 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:56 - 0:00:38 -      75 -  164.31 sent/s -  4605.00 words/s - MT-en-es:  9.6427 - Transformer LR = 1.0000e-07
-INFO - 06/15/19 13:18:57 - 0:00:39 -      80 -  264.43 sent/s -  4470.60 words/s - MT-en-es:  9.5293 - Transformer LR = 1.0000e-07
+INFO - 06/15/19 22:19:24 - 0:00:07 - Reloading model from /data4/bjji/source/github/model/mlm_base/mlm_ende_1024.pth ...
+INFO - 06/15/19 22:19:28 - 0:00:12 - Number of parameters (model): 142422203
+INFO - 06/15/19 22:19:29 - 0:00:12 - ============ Starting epoch 0 ... ============
+INFO - 06/15/19 22:19:29 - 0:00:12 - Creating new training data iterator (pred,en,de) ...
+INFO - 06/15/19 22:19:30 - 0:00:13 - Creating new training data iterator (pred,de,en) ...
+INFO - 06/15/19 22:19:31 - 0:00:14 -       5 -  120.18 sent/s -   964.82 words/s - MA-de-en:  9.6341 || MA-en-de:  7.2640 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:19:34 - 0:00:17 -      10 -  133.79 sent/s -  1708.80 words/s - MA-de-en:  7.4975 || MA-en-de:  6.6541 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:19:36 - 0:00:19 -      15 -  162.71 sent/s -  1561.47 words/s - MA-de-en:  8.3842 || MA-en-de:  5.2341 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:19:38 - 0:00:21 -      20 -  149.03 sent/s -  1731.07 words/s - MA-de-en:  6.5765 || MA-en-de:  5.8254 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:19:40 - 0:00:23 -      25 -  149.73 sent/s -  1612.86 words/s - MA-de-en:  6.1136 || MA-en-de:  5.2898 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:19:42 - 0:00:25 -      30 -  139.09 sent/s -  1743.35 words/s - MA-de-en:  5.8098 || MA-en-de:  5.4988 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:19:45 - 0:00:28 -      35 -  141.36 sent/s -  1672.00 words/s - MA-de-en:  6.0388 || MA-en-de:  4.9363 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:19:47 - 0:00:30 -      40 -  139.67 sent/s -  1697.83 words/s - MA-de-en:  5.8506 || MA-en-de:  5.1719 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:19:49 - 0:00:32 -      45 -  170.86 sent/s -  1532.89 words/s - MA-de-en:  5.4799 || MA-en-de:  4.2314 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:19:51 - 0:00:34 -      50 -  136.35 sent/s -  1738.85 words/s - MA-de-en:  5.8613 || MA-en-de:  4.7054 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:19:53 - 0:00:36 -      55 -  169.59 sent/s -  1580.93 words/s - MA-de-en:  5.4395 || MA-en-de:  4.1727 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:19:55 - 0:00:39 -      60 -  128.80 sent/s -  1830.14 words/s - MA-de-en:  5.7291 || MA-en-de:  5.0426 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:19:58 - 0:00:41 -      65 -  121.94 sent/s -  1760.55 words/s - MA-de-en:  5.8885 || MA-en-de:  4.7384 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:00 - 0:00:43 -      70 -  142.51 sent/s -  1625.53 words/s - MA-de-en:  4.9233 || MA-en-de:  4.6974 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:02 - 0:00:46 -      75 -  148.42 sent/s -  1692.01 words/s - MA-de-en:  5.1002 || MA-en-de:  4.5418 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:05 - 0:00:48 -      80 -  144.96 sent/s -  1680.21 words/s - MA-de-en:  5.3058 || MA-en-de:  4.7759 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:06 - 0:00:49 -      85 -  187.77 sent/s -  1488.11 words/s - MA-de-en:  4.4249 || MA-en-de:  4.4002 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:09 - 0:00:52 -      90 -  138.70 sent/s -  1708.58 words/s - MA-de-en:  5.1142 || MA-en-de:  4.5043 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:11 - 0:00:54 -      95 -  153.17 sent/s -  1609.25 words/s - MA-de-en:  5.1314 || MA-en-de:  4.3352 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:13 - 0:00:56 -     100 -  147.85 sent/s -  1622.15 words/s - MA-de-en:  5.0607 || MA-en-de:  4.5806 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:15 - 0:00:58 -     105 -  138.14 sent/s -  1703.40 words/s - MA-de-en:  5.1343 || MA-en-de:  4.8648 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:17 - 0:01:00 -     110 -  189.39 sent/s -  1429.33 words/s - MA-de-en:  3.5371 || MA-en-de:  4.0226 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:19 - 0:01:02 -     115 -  131.70 sent/s -  1653.63 words/s - MA-de-en:  4.3761 || MA-en-de:  4.7049 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:22 - 0:01:05 -     120 -  137.46 sent/s -  1700.24 words/s - MA-de-en:  5.3074 || MA-en-de:  4.4613 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:24 - 0:01:07 -     125 -  141.37 sent/s -  1739.28 words/s - MA-de-en:  4.7575 || MA-en-de:  4.5716 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:26 - 0:01:09 -     130 -  161.89 sent/s -  1570.31 words/s - MA-de-en:  5.2077 || MA-en-de:  4.1442 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:28 - 0:01:11 -     135 -  135.15 sent/s -  1701.57 words/s - MA-de-en:  5.1022 || MA-en-de:  3.5763 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:30 - 0:01:13 -     140 -  175.17 sent/s -  1467.62 words/s - MA-de-en:  4.0917 || MA-en-de:  3.8609 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:32 - 0:01:15 -     145 -  151.53 sent/s -  1595.37 words/s - MA-de-en:  4.6062 || MA-en-de:  3.3596 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:34 - 0:01:17 -     150 -  151.69 sent/s -  1565.23 words/s - MA-de-en:  5.0735 || MA-en-de:  3.6272 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:37 - 0:01:20 -     155 -  131.22 sent/s -  1714.00 words/s - MA-de-en:  4.8683 || MA-en-de:  4.6828 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:39 - 0:01:22 -     160 -  180.21 sent/s -  1454.60 words/s - MA-de-en:  4.2373 || MA-en-de:  3.6171 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:41 - 0:01:24 -     165 -  159.98 sent/s -  1517.26 words/s - MA-de-en:  4.4994 || MA-en-de:  3.8004 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:43 - 0:01:26 -     170 -  149.63 sent/s -  1646.82 words/s - MA-de-en:  4.8871 || MA-en-de:  3.9443 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:44 - 0:01:28 -     175 -  181.38 sent/s -  1406.23 words/s - MA-de-en:  3.5830 || MA-en-de:  3.9950 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:47 - 0:01:30 -     180 -  140.50 sent/s -  1669.26 words/s - MA-de-en:  4.8631 || MA-en-de:  4.4256 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:49 - 0:01:32 -     185 -  138.15 sent/s -  1757.97 words/s - MA-de-en:  5.3891 || MA-en-de:  3.7322 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:51 - 0:01:34 -     190 -  170.90 sent/s -  1562.70 words/s - MA-de-en:  4.3910 || MA-en-de:  3.8790 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:53 - 0:01:36 -     195 -  142.97 sent/s -  1680.38 words/s - MA-de-en:  4.7665 || MA-en-de:  4.3619 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:55 - 0:01:38 -     200 -  169.58 sent/s -  1472.67 words/s - MA-de-en:  4.3475 || MA-en-de:  3.9620 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:57 - 0:01:41 -     205 -  133.80 sent/s -  1816.33 words/s - MA-de-en:  5.6232 || MA-en-de:  4.0841 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:20:59 - 0:01:42 -     210 -  165.91 sent/s -  1612.92 words/s - MA-de-en:  4.1577 || MA-en-de:  4.0377 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:02 - 0:01:45 -     215 -  141.87 sent/s -  1705.13 words/s - MA-de-en:  4.5412 || MA-en-de:  4.4547 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:04 - 0:01:47 -     220 -  134.05 sent/s -  1749.29 words/s - MA-de-en:  4.8614 || MA-en-de:  4.1099 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:06 - 0:01:49 -     225 -  186.08 sent/s -  1388.05 words/s - MA-de-en:  3.6890 || MA-en-de:  3.6776 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:08 - 0:01:51 -     230 -  164.44 sent/s -  1593.55 words/s - MA-de-en:  4.0685 || MA-en-de:  4.1469 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:10 - 0:01:53 -     235 -  162.19 sent/s -  1501.76 words/s - MA-de-en:  4.8802 || MA-en-de:  3.7023 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:12 - 0:01:55 -     240 -  148.43 sent/s -  1535.36 words/s - MA-de-en:  3.8536 || MA-en-de:  4.3243 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:14 - 0:01:57 -     245 -  141.78 sent/s -  1749.64 words/s - MA-de-en:  4.3053 || MA-en-de:  4.1354 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:16 - 0:01:59 -     250 -  152.21 sent/s -  1599.58 words/s - MA-de-en:  4.8649 || MA-en-de:  4.1932 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:18 - 0:02:01 -     255 -  143.60 sent/s -  1685.53 words/s - MA-de-en:  4.6418 || MA-en-de:  4.2031 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:20 - 0:02:04 -     260 -  155.88 sent/s -  1586.53 words/s - MA-de-en:  4.3449 || MA-en-de:  3.8852 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:23 - 0:02:06 -     265 -  126.28 sent/s -  1720.11 words/s - MA-de-en:  5.0998 || MA-en-de:  4.2728 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:25 - 0:02:08 -     270 -  148.54 sent/s -  1565.25 words/s - MA-de-en:  4.3571 || MA-en-de:  4.2029 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:27 - 0:02:10 -     275 -  144.67 sent/s -  1651.99 words/s - MA-de-en:  4.2299 || MA-en-de:  4.3181 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:29 - 0:02:13 -     280 -  150.90 sent/s -  1612.22 words/s - MA-de-en:  4.2420 || MA-en-de:  4.2105 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:31 - 0:02:14 -     285 -  190.38 sent/s -  1397.53 words/s - MA-de-en:  3.9328 || MA-en-de:  3.2453 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:33 - 0:02:17 -     290 -  141.51 sent/s -  1670.31 words/s - MA-de-en:  4.8975 || MA-en-de:  3.7238 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:36 - 0:02:19 -     295 -  144.53 sent/s -  1678.40 words/s - MA-de-en:  4.5784 || MA-en-de:  3.9228 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:38 - 0:02:21 -     300 -  165.07 sent/s -  1535.68 words/s - MA-de-en:  4.2735 || MA-en-de:  4.0845 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:40 - 0:02:23 -     305 -  134.74 sent/s -  1736.89 words/s - MA-de-en:  4.5800 || MA-en-de:  4.0261 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:42 - 0:02:25 -     310 -  145.90 sent/s -  1651.38 words/s - MA-de-en:  4.6678 || MA-en-de:  2.3863 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:44 - 0:02:27 -     315 -  166.63 sent/s -  1575.66 words/s - MA-de-en:  4.1428 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:46 - 0:02:29 -     320 -  175.73 sent/s -  1458.02 words/s - MA-de-en:  3.9258 || MA-en-de:  3.9233 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:48 - 0:02:31 -     325 -  184.74 sent/s -  1428.24 words/s - MA-de-en:  4.5498 || MA-en-de:  3.2431 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:50 - 0:02:33 -     330 -  152.26 sent/s -  1654.38 words/s - MA-de-en:  4.8265 || MA-en-de:  3.8293 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:52 - 0:02:35 -     335 -  163.93 sent/s -  1603.92 words/s - MA-de-en:  3.8924 || MA-en-de:  4.0997 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:54 - 0:02:37 -     340 -  165.78 sent/s -  1508.11 words/s - MA-de-en:  4.4295 || MA-en-de:  3.3625 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:56 - 0:02:39 -     345 -  152.46 sent/s -  1569.90 words/s - MA-de-en:  4.1810 || MA-en-de:  3.7986 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:21:58 - 0:02:41 -     350 -  146.64 sent/s -  1619.45 words/s - MA-de-en:  4.2998 || MA-en-de:  4.0470 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:00 - 0:02:43 -     355 -  140.02 sent/s -  1537.16 words/s - MA-de-en:  4.9560 || MA-en-de:  3.6573 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:03 - 0:02:46 -     360 -  116.18 sent/s -  1769.60 words/s - MA-de-en:  3.8399 || MA-en-de:  4.9548 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:05 - 0:02:48 -     365 -  137.04 sent/s -  1635.11 words/s - MA-de-en:  4.7194 || MA-en-de:  4.0186 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:07 - 0:02:50 -     370 -  149.75 sent/s -  1672.02 words/s - MA-de-en:  4.0159 || MA-en-de:  4.4517 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:10 - 0:02:53 -     375 -  126.65 sent/s -  1768.35 words/s - MA-de-en:  4.6383 || MA-en-de:  3.9420 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:12 - 0:02:56 -     380 -  128.39 sent/s -  1737.32 words/s - MA-de-en:  4.6196 || MA-en-de:  4.8975 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:14 - 0:02:58 -     385 -  154.83 sent/s -  1581.70 words/s - MA-de-en:  4.6331 || MA-en-de:  3.8451 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:16 - 0:02:59 -     390 -  174.06 sent/s -  1446.90 words/s - MA-de-en:  4.2350 || MA-en-de:  3.5088 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:19 - 0:03:02 -     395 -  135.68 sent/s -  1744.75 words/s - MA-de-en:  4.4476 || MA-en-de:  4.1880 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:20 - 0:03:03 -     400 -  186.51 sent/s -  1482.14 words/s - MA-de-en:  3.8187 || MA-en-de:  4.0979 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:23 - 0:03:06 -     405 -  147.95 sent/s -  1570.56 words/s - MA-de-en:  4.6952 || MA-en-de:  4.1870 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:25 - 0:03:08 -     410 -  140.33 sent/s -  1690.50 words/s - MA-de-en:  4.5785 || MA-en-de:  4.1804 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:27 - 0:03:11 -     415 -  121.20 sent/s -  1667.67 words/s - MA-de-en:  5.1067 || MA-en-de:  3.6210 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:30 - 0:03:13 -     420 -  142.00 sent/s -  1653.02 words/s - MA-de-en:  4.4015 || MA-en-de:  4.0358 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:32 - 0:03:15 -     425 -  143.56 sent/s -  1645.58 words/s - MA-de-en:  4.7755 || MA-en-de:  4.0248 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:34 - 0:03:17 -     430 -  144.84 sent/s -  1644.39 words/s - MA-de-en:  4.6847 || MA-en-de:  3.4819 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:36 - 0:03:19 -     435 -  202.66 sent/s -  1324.26 words/s - MA-de-en:  3.3282 || MA-en-de:  3.1887 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:38 - 0:03:21 -     440 -  142.55 sent/s -  1717.74 words/s - MA-de-en:  4.6094 || MA-en-de:  4.3885 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:40 - 0:03:23 -     445 -  174.43 sent/s -  1495.17 words/s - MA-de-en:  4.0359 || MA-en-de:  3.5073 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:42 - 0:03:25 -     450 -  157.95 sent/s -  1575.09 words/s - MA-de-en:  4.7799 || MA-en-de:  3.6825 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:44 - 0:03:27 -     455 -  135.48 sent/s -  1715.06 words/s - MA-de-en:  4.7182 || MA-en-de:  3.9800 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:46 - 0:03:29 -     460 -  162.57 sent/s -  1492.62 words/s - MA-de-en:  3.3672 || MA-en-de:  4.1580 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:48 - 0:03:31 -     465 -  177.73 sent/s -  1486.79 words/s - MA-de-en:  4.2727 || MA-en-de:  3.5308 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:50 - 0:03:33 -     470 -  134.45 sent/s -  1648.65 words/s - MA-de-en:  5.2934 || MA-en-de:  3.4629 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:52 - 0:03:36 -     475 -  148.61 sent/s -  1619.87 words/s - MA-de-en:  4.6122 || MA-en-de:  3.9184 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:55 - 0:03:38 -     480 -  128.47 sent/s -  1713.11 words/s - MA-de-en:  2.8583 || MA-en-de:  4.4015 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:57 - 0:03:40 -     485 -  189.90 sent/s -  1397.55 words/s - MA-de-en:  3.9563 || MA-en-de:  3.3298 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:22:59 - 0:03:42 -     490 -  157.79 sent/s -  1545.86 words/s - MA-de-en:  3.7854 || MA-en-de:  3.3340 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:01 - 0:03:44 -     495 -  163.35 sent/s -  1496.69 words/s - MA-de-en:  4.0443 || MA-en-de:  3.7268 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:03 - 0:03:46 -     500 -  131.34 sent/s -  1693.45 words/s - MA-de-en:  4.3496 || MA-en-de:  3.7592 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:05 - 0:03:48 -     505 -  181.84 sent/s -  1491.68 words/s - MA-de-en:  4.2170 || MA-en-de:  2.5698 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:07 - 0:03:50 -     510 -  140.36 sent/s -  1718.96 words/s - MA-de-en:  4.7757 || MA-en-de:  3.7371 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:09 - 0:03:52 -     515 -  160.98 sent/s -  1568.53 words/s - MA-de-en:  3.9291 || MA-en-de:  3.2672 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:11 - 0:03:54 -     520 -  158.01 sent/s -  1577.14 words/s - MA-de-en:  4.1456 || MA-en-de:  3.9591 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:13 - 0:03:56 -     525 -  169.74 sent/s -  1586.04 words/s - MA-de-en:  3.9770 || MA-en-de:  3.5192 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:15 - 0:03:58 -     530 -  138.51 sent/s -  1644.41 words/s - MA-de-en:  4.4143 || MA-en-de:  4.0845 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:17 - 0:04:01 -     535 -  146.70 sent/s -  1522.00 words/s - MA-de-en:  3.9175 || MA-en-de:  3.8638 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:19 - 0:04:03 -     540 -  165.95 sent/s -  1518.45 words/s - MA-de-en:  3.7018 || MA-en-de:  3.7569 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:21 - 0:04:05 -     545 -  164.23 sent/s -  1548.89 words/s - MA-de-en:  4.2801 || MA-en-de:  3.9440 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:23 - 0:04:07 -     550 -  158.25 sent/s -  1536.96 words/s - MA-de-en:  4.0260 || MA-en-de:  3.7782 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:25 - 0:04:08 -     555 -  184.84 sent/s -  1387.46 words/s - MA-de-en:  3.2731 || MA-en-de:  3.6383 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:27 - 0:04:10 -     560 -  148.00 sent/s -  1672.36 words/s - MA-de-en:  3.8930 || MA-en-de:  4.1527 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:29 - 0:04:12 -     565 -  160.17 sent/s -  1561.13 words/s - MA-de-en:  4.1349 || MA-en-de:  3.6362 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:31 - 0:04:15 -     570 -  149.95 sent/s -  1607.29 words/s - MA-de-en:  4.0778 || MA-en-de:  3.9578 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:34 - 0:04:17 -     575 -  143.04 sent/s -  1689.70 words/s - MA-de-en:  4.6949 || MA-en-de:  3.8099 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:35 - 0:04:18 -     580 -  191.78 sent/s -  1408.98 words/s - MA-de-en:  3.3296 || MA-en-de:  3.2465 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:37 - 0:04:21 -     585 -  150.24 sent/s -  1629.59 words/s - MA-de-en:  4.3211 || MA-en-de:  3.4549 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:40 - 0:04:23 -     590 -  148.09 sent/s -  1662.29 words/s - MA-de-en:  4.5509 || MA-en-de:  3.4100 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:42 - 0:04:25 -     595 -  125.71 sent/s -  1706.54 words/s - MA-de-en:  4.4167 || MA-en-de:  3.7258 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:44 - 0:04:27 -     600 -  201.02 sent/s -  1274.56 words/s - MA-de-en:  3.4113 || MA-en-de:  2.9784 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:46 - 0:04:29 -     605 -  156.01 sent/s -  1513.78 words/s - MA-de-en:  4.4582 || MA-en-de:  3.6829 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:48 - 0:04:31 -     610 -  153.65 sent/s -  1633.99 words/s - MA-de-en:  3.7620 || MA-en-de:  4.0164 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:51 - 0:04:34 -     615 -  120.59 sent/s -  1762.81 words/s - MA-de-en:  4.7879 || MA-en-de:  4.3901 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:53 - 0:04:36 -     620 -  128.23 sent/s -  1745.11 words/s - MA-de-en:  4.5766 || MA-en-de:  4.2184 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:56 - 0:04:39 -     625 -  120.47 sent/s -  1701.98 words/s - MA-de-en:  4.9583 || MA-en-de:  4.1145 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:23:58 - 0:04:41 -     630 -  144.13 sent/s -  1607.90 words/s - MA-de-en:  4.1845 || MA-en-de:  4.1006 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:00 - 0:04:44 -     635 -  126.21 sent/s -  1739.76 words/s - MA-de-en:  4.3651 || MA-en-de:  3.8523 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:02 - 0:04:45 -     640 -  168.12 sent/s -  1482.58 words/s - MA-de-en:  3.8046 || MA-en-de:  2.9994 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:05 - 0:04:48 -     645 -  138.62 sent/s -  1664.78 words/s - MA-de-en:  3.7387 || MA-en-de:  3.7427 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:07 - 0:04:50 -     650 -  158.31 sent/s -  1620.22 words/s - MA-de-en:  3.9178 || MA-en-de:  3.7517 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:09 - 0:04:52 -     655 -  168.14 sent/s -  1481.21 words/s - MA-de-en:  3.6605 || MA-en-de:  3.8713 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:10 - 0:04:53 -     660 -  194.75 sent/s -  1321.27 words/s - MA-de-en:  3.1459 || MA-en-de:  3.3463 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:12 - 0:04:55 -     665 -  160.64 sent/s -  1617.91 words/s - MA-de-en:  3.7433 || MA-en-de:  3.7792 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:15 - 0:04:58 -     670 -  118.32 sent/s -  1810.72 words/s - MA-de-en:  5.4312 || MA-en-de:  3.2184 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:17 - 0:05:00 -     675 -  136.37 sent/s -  1678.15 words/s - MA-de-en:  4.3837 || MA-en-de:  3.8311 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:19 - 0:05:03 -     680 -  148.26 sent/s -  1650.82 words/s - MA-de-en:  4.6098 || MA-en-de:  3.8104 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:22 - 0:05:05 -     685 -  129.43 sent/s -  1660.74 words/s - MA-de-en:  4.9490 || MA-en-de:  3.6924 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:24 - 0:05:07 -     690 -  165.30 sent/s -  1449.99 words/s - MA-de-en:  4.2038 || MA-en-de:  2.8927 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:26 - 0:05:09 -     695 -  139.64 sent/s -  1645.57 words/s - MA-de-en:  4.4053 || MA-en-de:  3.0052 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:29 - 0:05:12 -     700 -  132.06 sent/s -  1608.28 words/s - MA-de-en:  3.8791 || MA-en-de:  3.9225 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:30 - 0:05:14 -     705 -  173.12 sent/s -  1462.88 words/s - MA-de-en:  3.5299 || MA-en-de:  3.7191 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:32 - 0:05:16 -     710 -  155.89 sent/s -  1518.45 words/s - MA-de-en:  4.7393 || MA-en-de:  2.9724 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:34 - 0:05:18 -     715 -  163.73 sent/s -  1449.50 words/s - MA-de-en:  3.6308 || MA-en-de:  3.7828 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:36 - 0:05:20 -     720 -  161.30 sent/s -  1487.97 words/s - MA-de-en:  3.9008 || MA-en-de:  3.1644 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:39 - 0:05:22 -     725 -  147.09 sent/s -  1608.36 words/s - MA-de-en:  4.4297 || MA-en-de:  3.3454 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:41 - 0:05:24 -     730 -  127.59 sent/s -  1671.38 words/s - MA-de-en:  4.1348 || MA-en-de:  4.0699 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:43 - 0:05:26 -     735 -  146.64 sent/s -  1580.95 words/s - MA-de-en:  3.9903 || MA-en-de:  3.7474 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:45 - 0:05:29 -     740 -  145.16 sent/s -  1608.56 words/s - MA-de-en:  4.6365 || MA-en-de:  3.4863 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:48 - 0:05:31 -     745 -  127.85 sent/s -  1649.25 words/s - MA-de-en:  4.6050 || MA-en-de:  4.2175 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:50 - 0:05:33 -     750 -  145.90 sent/s -  1604.39 words/s - MA-de-en:  3.7879 || MA-en-de:  4.2418 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:52 - 0:05:36 -     755 -  137.43 sent/s -  1657.31 words/s - MA-de-en:  4.0421 || MA-en-de:  3.8177 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:55 - 0:05:38 -     760 -  138.53 sent/s -  1663.22 words/s - MA-de-en:  4.2192 || MA-en-de:  4.4273 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:57 - 0:05:40 -     765 -  125.97 sent/s -  1737.21 words/s - MA-de-en:  4.4139 || MA-en-de:  3.7972 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:24:59 - 0:05:43 -     770 -  154.50 sent/s -  1530.47 words/s - MA-de-en:  4.4165 || MA-en-de:  3.2062 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:02 - 0:05:45 -     775 -  140.77 sent/s -  1584.05 words/s - MA-de-en:  3.4250 || MA-en-de:  3.5929 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:04 - 0:05:47 -     780 -  143.48 sent/s -  1640.16 words/s - MA-de-en:  4.1406 || MA-en-de:  3.5562 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:06 - 0:05:49 -     785 -  169.72 sent/s -  1443.13 words/s - MA-de-en:  3.4785 || MA-en-de:  3.5602 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:08 - 0:05:51 -     790 -  177.56 sent/s -  1424.88 words/s - MA-de-en:  4.0274 || MA-en-de:  3.2579 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:10 - 0:05:53 -     795 -  145.59 sent/s -  1610.57 words/s - MA-de-en:  4.1375 || MA-en-de:  3.7910 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:12 - 0:05:55 -     800 -  155.09 sent/s -  1525.72 words/s - MA-de-en:  3.8327 || MA-en-de:  3.8303 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:14 - 0:05:57 -     805 -  137.40 sent/s -  1644.03 words/s - MA-de-en:  4.3369 || MA-en-de:  3.5485 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:17 - 0:06:00 -     810 -  133.62 sent/s -  1642.65 words/s - MA-de-en:  4.1191 || MA-en-de:  3.7879 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:19 - 0:06:02 -     815 -  135.69 sent/s -  1585.07 words/s - MA-de-en:  3.5618 || MA-en-de:  4.2944 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:21 - 0:06:04 -     820 -  155.11 sent/s -  1585.56 words/s - MA-de-en:  3.7711 || MA-en-de:  3.7333 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:23 - 0:06:06 -     825 -  152.58 sent/s -  1506.22 words/s - MA-de-en:  4.1329 || MA-en-de:  3.5782 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:25 - 0:06:08 -     830 -  162.21 sent/s -  1474.08 words/s - MA-de-en:  4.1858 || MA-en-de:  3.6786 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:28 - 0:06:11 -     835 -  122.56 sent/s -  1781.29 words/s - MA-de-en:  5.0221 || MA-en-de:  3.6473 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:30 - 0:06:13 -     840 -  124.12 sent/s -  1667.03 words/s - MA-de-en:  4.5736 || MA-en-de:  3.8922 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:32 - 0:06:16 -     845 -  145.32 sent/s -  1619.86 words/s - MA-de-en:  3.8775 || MA-en-de:  4.3842 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:34 - 0:06:18 -     850 -  163.56 sent/s -  1497.06 words/s - MA-de-en:  3.5678 || MA-en-de:  3.4723 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:36 - 0:06:20 -     855 -  156.69 sent/s -  1601.13 words/s - MA-de-en:  4.3938 || MA-en-de:  3.2529 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:39 - 0:06:22 -     860 -  125.21 sent/s -  1736.84 words/s - MA-de-en:  4.6117 || MA-en-de:  3.8098 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:41 - 0:06:24 -     865 -  139.42 sent/s -  1651.72 words/s - MA-de-en:  4.6147 || MA-en-de:  3.6038 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:44 - 0:06:27 -     870 -  139.50 sent/s -  1628.28 words/s - MA-de-en:  4.5829 || MA-en-de:  3.5222 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:46 - 0:06:29 -     875 -  141.42 sent/s -  1565.30 words/s - MA-de-en:  3.7561 || MA-en-de:  4.0825 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:48 - 0:06:32 -     880 -  128.73 sent/s -  1716.50 words/s - MA-de-en:  4.3679 || MA-en-de:  4.2018 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:50 - 0:06:34 -     885 -  158.37 sent/s -  1481.25 words/s - MA-de-en:  3.7141 || MA-en-de:  3.6587 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:53 - 0:06:36 -     890 -  139.13 sent/s -  1565.18 words/s - MA-de-en:  4.5698 || MA-en-de:  3.9996 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:55 - 0:06:38 -     895 -  151.70 sent/s -  1552.58 words/s - MA-de-en:  4.1860 || MA-en-de:  4.0426 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:57 - 0:06:40 -     900 -  148.53 sent/s -  1634.75 words/s - MA-de-en:  4.3983 || MA-en-de:  3.4274 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:25:59 - 0:06:42 -     905 -  156.09 sent/s -  1574.56 words/s - MA-de-en:  4.6928 || MA-en-de:  3.4881 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:01 - 0:06:44 -     910 -  150.43 sent/s -  1569.14 words/s - MA-de-en:  3.4263 || MA-en-de:  3.9720 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:04 - 0:06:47 -     915 -  124.12 sent/s -  1664.01 words/s - MA-de-en:  4.4569 || MA-en-de:  4.5462 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:06 - 0:06:49 -     920 -  153.58 sent/s -  1572.27 words/s - MA-de-en:  3.9998 || MA-en-de:  2.9217 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:08 - 0:06:51 -     925 -  147.97 sent/s -  1472.34 words/s - MA-en-de:  3.5003 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:11 - 0:06:54 -     930 -  108.81 sent/s -  1828.61 words/s - MA-de-en:  5.1279 || MA-en-de:  3.9744 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:13 - 0:06:56 -     935 -  142.22 sent/s -  1596.01 words/s - MA-de-en:  3.4185 || MA-en-de:  4.1056 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:15 - 0:06:58 -     940 -  143.70 sent/s -  1598.62 words/s - MA-de-en:  3.5766 || MA-en-de:  3.6999 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:17 - 0:07:01 -     945 -  157.40 sent/s -  1552.83 words/s - MA-de-en:  4.4284 || MA-en-de:  2.7137 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:20 - 0:07:03 -     950 -  112.20 sent/s -  1864.90 words/s - MA-de-en:  4.4727 || MA-en-de:  4.3345 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:22 - 0:07:05 -     955 -  162.12 sent/s -  1553.27 words/s - MA-de-en:  4.1059 || MA-en-de:  3.3609 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:24 - 0:07:07 -     960 -  155.41 sent/s -  1557.02 words/s - MA-de-en:  3.9714 || MA-en-de:  3.6407 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:26 - 0:07:10 -     965 -  149.53 sent/s -  1621.02 words/s - MA-de-en:  4.0361 || MA-en-de:  3.3263 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:28 - 0:07:11 -     970 -  191.95 sent/s -  1338.85 words/s - MA-de-en:  3.3547 || MA-en-de:  3.0541 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:30 - 0:07:14 -     975 -  135.71 sent/s -  1739.66 words/s - MA-de-en:  4.7865 || MA-en-de:  3.6248 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:33 - 0:07:16 -     980 -  128.13 sent/s -  1662.11 words/s - MA-de-en:  4.2169 || MA-en-de:  4.2421 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:35 - 0:07:19 -     985 -  131.89 sent/s -  1639.52 words/s - MA-de-en:  4.3443 || MA-en-de:  3.6737 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:37 - 0:07:20 -     990 -  189.39 sent/s -  1385.52 words/s - MA-de-en:  3.6787 || MA-en-de:  3.1355 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:39 - 0:07:22 -     995 -  140.51 sent/s -  1651.38 words/s - MA-de-en:  3.7873 || MA-en-de:  3.8072 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:41 - 0:07:24 -    1000 -  172.87 sent/s -  1479.65 words/s - MA-de-en:  3.6268 || MA-en-de:  3.3317 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:43 - 0:07:26 -    1005 -  153.89 sent/s -  1545.63 words/s - MA-de-en:  3.2343 || MA-en-de:  3.7415 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:46 - 0:07:29 -    1010 -  122.59 sent/s -  1783.37 words/s - MA-de-en:  4.9921 || MA-en-de:  3.6046 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:48 - 0:07:31 -    1015 -  163.12 sent/s -  1603.69 words/s - MA-de-en:  4.0892 || MA-en-de:  3.7769 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:50 - 0:07:34 -    1020 -  124.98 sent/s -  1759.83 words/s - MA-de-en:  4.3960 || MA-en-de:  3.9821 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:52 - 0:07:36 -    1025 -  161.51 sent/s -  1539.91 words/s - MA-de-en:  4.0368 || MA-en-de:  3.4710 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:54 - 0:07:38 -    1030 -  158.36 sent/s -  1524.20 words/s - MA-de-en:  3.5897 || MA-en-de:  3.5183 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:57 - 0:07:40 -    1035 -  127.47 sent/s -  1732.45 words/s - MA-de-en:  4.7076 || MA-en-de:  3.9462 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:26:59 - 0:07:42 -    1040 -  148.78 sent/s -  1588.69 words/s - MA-de-en:  4.1752 || MA-en-de:  3.6529 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:01 - 0:07:44 -    1045 -  139.81 sent/s -  1628.80 words/s - MA-de-en:  4.5484 || MA-en-de:  2.9911 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:03 - 0:07:46 -    1050 -  198.41 sent/s -  1346.08 words/s - MA-de-en:  3.0366 || MA-en-de:  3.1722 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:05 - 0:07:48 -    1055 -  146.89 sent/s -  1661.74 words/s - MA-de-en:  4.0168 || MA-en-de:  3.6582 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:07 - 0:07:50 -    1060 -  174.35 sent/s -  1441.10 words/s - MA-de-en:  3.3197 || MA-en-de:  3.4314 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:09 - 0:07:52 -    1065 -  143.69 sent/s -  1620.95 words/s - MA-de-en:  4.1619 || MA-en-de:  3.6696 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:11 - 0:07:54 -    1070 -  180.42 sent/s -  1459.13 words/s - MA-de-en:  4.0048 || MA-en-de:  2.5961 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:13 - 0:07:56 -    1075 -  140.51 sent/s -  1652.31 words/s - MA-de-en:  4.4654 || MA-en-de:  3.6089 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:15 - 0:07:58 -    1080 -  153.60 sent/s -  1576.34 words/s - MA-de-en:  4.3419 || MA-en-de:  3.1274 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:18 - 0:08:01 -    1085 -  125.60 sent/s -  1763.54 words/s - MA-de-en:  4.4349 || MA-en-de:  4.3324 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:20 - 0:08:03 -    1090 -  158.21 sent/s -  1569.26 words/s - MA-de-en:  3.4744 || MA-en-de:  3.4719 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:22 - 0:08:05 -    1095 -  178.93 sent/s -  1471.70 words/s - MA-de-en:  2.6586 || MA-en-de:  2.9285 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:24 - 0:08:07 -    1100 -  132.49 sent/s -  1722.39 words/s - MA-de-en:  4.6678 || MA-en-de:  3.8077 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:26 - 0:08:10 -    1105 -  138.70 sent/s -  1586.34 words/s - MA-de-en:  3.9986 || MA-en-de:  3.8529 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:29 - 0:08:12 -    1110 -  123.67 sent/s -  1773.09 words/s - MA-de-en:  4.1945 || MA-en-de:  4.3146 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:31 - 0:08:14 -    1115 -  159.85 sent/s -  1499.63 words/s - MA-de-en:  4.0364 || MA-en-de:  3.4995 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:33 - 0:08:16 -    1120 -  140.37 sent/s -  1656.37 words/s - MA-de-en:  4.4122 || MA-en-de:  3.7903 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:35 - 0:08:18 -    1125 -  162.79 sent/s -  1526.12 words/s - MA-de-en:  4.0518 || MA-en-de:  2.7307 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:37 - 0:08:21 -    1130 -  146.74 sent/s -  1591.22 words/s - MA-de-en:  3.5958 || MA-en-de:  3.5464 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:40 - 0:08:23 -    1135 -  128.46 sent/s -  1759.16 words/s - MA-de-en:  4.1081 || MA-en-de:  4.0141 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:42 - 0:08:25 -    1140 -  146.02 sent/s -  1713.45 words/s - MA-de-en:  4.5367 || MA-en-de:  3.1758 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:44 - 0:08:27 -    1145 -  180.12 sent/s -  1372.87 words/s - MA-de-en:  3.3482 || MA-en-de:  3.2725 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:46 - 0:08:29 -    1150 -  130.55 sent/s -  1762.03 words/s - MA-de-en:  4.4472 || MA-en-de:  3.4552 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:48 - 0:08:32 -    1155 -  153.69 sent/s -  1555.12 words/s - MA-de-en:  3.3714 || MA-en-de:  3.5474 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:51 - 0:08:34 -    1160 -  150.77 sent/s -  1643.37 words/s - MA-de-en:  3.9349 || MA-en-de:  3.8404 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:53 - 0:08:36 -    1165 -  137.16 sent/s -  1578.03 words/s - MA-de-en:  4.0027 || MA-en-de:  3.4857 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:55 - 0:08:38 -    1170 -  145.58 sent/s -  1633.17 words/s - MA-de-en:  4.3692 || MA-en-de:  3.2197 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:27:57 - 0:08:40 -    1175 -  144.26 sent/s -  1575.64 words/s - MA-de-en:  4.2402 || MA-en-de:  3.5408 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:00 - 0:08:43 -    1180 -  116.85 sent/s -  1713.24 words/s - MA-de-en:  5.1140 || MA-en-de:  3.7320 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:02 - 0:08:45 -    1185 -  163.87 sent/s -  1519.35 words/s - MA-de-en:  4.0095 || MA-en-de:  3.4069 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:04 - 0:08:48 -    1190 -  128.89 sent/s -  1650.54 words/s - MA-de-en:  4.2068 || MA-en-de:  3.2435 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:07 - 0:08:50 -    1195 -  137.59 sent/s -  1629.53 words/s - MA-de-en:  4.1554 || MA-en-de:  3.8374 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:09 - 0:08:53 -    1200 -  117.89 sent/s -  1774.65 words/s - MA-de-en:  4.5790 || MA-en-de:  3.9458 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:11 - 0:08:55 -    1205 -  159.70 sent/s -  1607.99 words/s - MA-de-en:  4.0375 || MA-en-de:  3.4999 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:13 - 0:08:56 -    1210 -  172.53 sent/s -  1465.99 words/s - MA-de-en:  3.2821 || MA-en-de:  3.2801 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:15 - 0:08:58 -    1215 -  174.38 sent/s -  1441.38 words/s - MA-de-en:  3.3141 || MA-en-de:  3.1191 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:18 - 0:09:01 -    1220 -  134.55 sent/s -  1704.19 words/s - MA-de-en:  4.7099 || MA-en-de:  3.4924 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:20 - 0:09:03 -    1225 -  144.44 sent/s -  1669.19 words/s - MA-de-en:  4.4099 || MA-en-de:  3.0734 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:22 - 0:09:05 -    1230 -  135.15 sent/s -  1728.59 words/s - MA-de-en:  4.1575 || MA-en-de:  3.4663 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:24 - 0:09:07 -    1235 -  161.93 sent/s -  1544.88 words/s - MA-de-en:  3.9786 || MA-en-de:  3.2474 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:26 - 0:09:09 -    1240 -  169.17 sent/s -  1511.41 words/s - MA-de-en:  4.0049 || MA-en-de:  3.2149 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:28 - 0:09:11 -    1245 -  151.50 sent/s -  1615.87 words/s - MA-de-en:  4.2999 || MA-en-de:  2.9985 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:31 - 0:09:14 -    1250 -  133.39 sent/s -  1729.49 words/s - MA-de-en:  4.3160 || MA-en-de:  3.9156 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:32 - 0:09:16 -    1255 -  164.28 sent/s -  1554.46 words/s - MA-de-en:  3.2110 || MA-en-de:  3.7645 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:35 - 0:09:18 -    1260 -  143.27 sent/s -  1560.69 words/s - MA-de-en:  4.5705 || MA-en-de:  2.9683 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:37 - 0:09:20 -    1265 -  146.09 sent/s -  1594.63 words/s - MA-de-en:  3.9423 || MA-en-de:  3.7319 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:39 - 0:09:22 -    1270 -  156.25 sent/s -  1637.18 words/s - MA-de-en:  4.4747 || MA-en-de:  3.5109 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:41 - 0:09:24 -    1275 -  148.26 sent/s -  1594.21 words/s - MA-de-en:  3.5275 || MA-en-de:  3.8133 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:43 - 0:09:26 -    1280 -  159.79 sent/s -  1584.92 words/s - MA-de-en:  3.7636 || MA-en-de:  3.7486 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:45 - 0:09:28 -    1285 -  162.09 sent/s -  1543.37 words/s - MA-de-en:  3.1550 || MA-en-de:  3.2928 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:47 - 0:09:30 -    1290 -  172.69 sent/s -  1469.52 words/s - MA-de-en:  3.8977 || MA-en-de:  2.8988 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:49 - 0:09:33 -    1295 -  127.83 sent/s -  1686.09 words/s - MA-de-en:  4.0093 || MA-en-de:  3.8949 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:52 - 0:09:35 -    1300 -  135.01 sent/s -  1662.33 words/s - MA-de-en:  4.5092 || MA-en-de:  3.6328 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:54 - 0:09:37 -    1305 -  152.36 sent/s -  1567.89 words/s - MA-de-en:  4.3210 || MA-en-de:  3.7104 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:56 - 0:09:39 -    1310 -  178.75 sent/s -  1423.86 words/s - MA-de-en:  3.5297 || MA-en-de:  3.1016 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:28:58 - 0:09:41 -    1315 -  149.18 sent/s -  1602.79 words/s - MA-de-en:  3.4404 || MA-en-de:  3.7339 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:00 - 0:09:43 -    1320 -  143.70 sent/s -  1531.28 words/s - MA-de-en:  3.7249 || MA-en-de:  3.5841 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:02 - 0:09:45 -    1325 -  155.61 sent/s -  1602.82 words/s - MA-de-en:  3.2788 || MA-en-de:  3.4983 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:04 - 0:09:48 -    1330 -  141.22 sent/s -  1623.13 words/s - MA-de-en:  4.5520 || MA-en-de:  3.6968 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:07 - 0:09:50 -    1335 -  148.17 sent/s -  1585.92 words/s - MA-de-en:  4.1244 || MA-en-de:  3.4830 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:09 - 0:09:52 -    1340 -  148.84 sent/s -  1650.78 words/s - MA-de-en:  4.3256 || MA-en-de:  3.3280 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:11 - 0:09:54 -    1345 -  154.84 sent/s -  1611.83 words/s - MA-de-en:  4.4396 || MA-en-de:  3.3144 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:13 - 0:09:56 -    1350 -  138.39 sent/s -  1730.69 words/s - MA-de-en:  4.2305 || MA-en-de:  3.6201 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:15 - 0:09:58 -    1355 -  163.11 sent/s -  1542.43 words/s - MA-de-en:  3.9143 || MA-en-de:  3.3116 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:17 - 0:10:00 -    1360 -  141.27 sent/s -  1726.58 words/s - MA-de-en:  3.8582 || MA-en-de:  4.0985 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:19 - 0:10:02 -    1365 -  157.95 sent/s -  1518.34 words/s - MA-de-en:  3.3976 || MA-en-de:  3.5854 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:21 - 0:10:04 -    1370 -  166.97 sent/s -  1520.46 words/s - MA-de-en:  3.4764 || MA-en-de:  3.3216 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:24 - 0:10:07 -    1375 -  141.04 sent/s -  1665.59 words/s - MA-de-en:  3.7060 || MA-en-de:  3.7858 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:26 - 0:10:09 -    1380 -  150.01 sent/s -  1582.61 words/s - MA-de-en:  3.8803 || MA-en-de:  3.7980 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:28 - 0:10:11 -    1385 -  143.38 sent/s -  1609.84 words/s - MA-de-en:  4.2302 || MA-en-de:  3.5975 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:30 - 0:10:13 -    1390 -  140.32 sent/s -  1651.37 words/s - MA-de-en:  4.1461 || MA-en-de:  3.6211 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:32 - 0:10:15 -    1395 -  155.54 sent/s -  1540.33 words/s - MA-de-en:  4.0092 || MA-en-de:  3.2077 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:34 - 0:10:17 -    1400 -  155.05 sent/s -  1612.05 words/s - MA-de-en:  4.1999 || MA-en-de:  3.6321 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:36 - 0:10:19 -    1405 -  168.88 sent/s -  1504.62 words/s - MA-de-en:  3.8385 || MA-en-de:  3.3977 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:38 - 0:10:22 -    1410 -  143.07 sent/s -  1677.54 words/s - MA-de-en:  4.1218 || MA-en-de:  3.5514 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:40 - 0:10:24 -    1415 -  163.47 sent/s -  1553.50 words/s - MA-de-en:  3.3829 || MA-en-de:  3.2505 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:43 - 0:10:26 -    1420 -  136.82 sent/s -  1648.29 words/s - MA-de-en:  4.1449 || MA-en-de:  3.6964 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:45 - 0:10:28 -    1425 -  140.20 sent/s -  1688.05 words/s - MA-de-en:  4.0041 || MA-en-de:  4.1654 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:47 - 0:10:30 -    1430 -  136.26 sent/s -  1631.73 words/s - MA-de-en:  3.9871 || MA-en-de:  3.9725 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:50 - 0:10:33 -    1435 -  117.92 sent/s -  1768.82 words/s - MA-de-en:  4.4457 || MA-en-de:  3.9668 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:53 - 0:10:36 -    1440 -  129.59 sent/s -  1785.98 words/s - MA-de-en:  4.0062 || MA-en-de:  3.7061 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:55 - 0:10:38 -    1445 -  145.27 sent/s -  1631.56 words/s - MA-de-en:  5.5841 || MA-en-de:  3.3909 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:57 - 0:10:40 -    1450 -  172.27 sent/s -  1520.33 words/s - MA-de-en:  3.8268 || MA-en-de:  2.8086 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:29:59 - 0:10:42 -    1455 -  143.71 sent/s -  1614.06 words/s - MA-de-en:  4.0525 || MA-en-de:  3.6965 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:01 - 0:10:44 -    1460 -  129.33 sent/s -  1721.66 words/s - MA-de-en:  4.1782 || MA-en-de:  3.7305 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:03 - 0:10:46 -    1465 -  165.12 sent/s -  1500.57 words/s - MA-de-en:  3.7672 || MA-en-de:  3.1885 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:05 - 0:10:48 -    1470 -  160.78 sent/s -  1539.99 words/s - MA-de-en:  3.6750 || MA-en-de:  3.8166 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:07 - 0:10:50 -    1475 -  158.79 sent/s -  1567.60 words/s - MA-de-en:  3.7058 || MA-en-de:  3.5292 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:10 - 0:10:53 -    1480 -  140.34 sent/s -  1674.38 words/s - MA-de-en:  4.0252 || MA-en-de:  3.8349 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:12 - 0:10:55 -    1485 -  153.50 sent/s -  1613.21 words/s - MA-de-en:  3.0847 || MA-en-de:  3.7104 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:14 - 0:10:57 -    1490 -  152.88 sent/s -  1571.77 words/s - MA-de-en:  3.7801 || MA-en-de:  3.6513 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:16 - 0:10:59 -    1495 -  170.76 sent/s -  1443.47 words/s - MA-de-en:  3.3944 || MA-en-de:  3.6290 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:18 - 0:11:01 -    1500 -  131.86 sent/s -  1637.16 words/s - MA-de-en:  4.7755 || MA-en-de:  3.4748 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:20 - 0:11:03 -    1505 -  154.29 sent/s -  1552.99 words/s - MA-de-en:  4.1355 || MA-en-de:  3.6128 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:23 - 0:11:06 -    1510 -  124.62 sent/s -  1759.83 words/s - MA-de-en:  4.5799 || MA-en-de:  3.8056 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:25 - 0:11:08 -    1515 -  152.86 sent/s -  1643.27 words/s - MA-de-en:  3.9687 || MA-en-de:  3.2868 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:27 - 0:11:10 -    1520 -  125.39 sent/s -  1763.74 words/s - MA-de-en:  4.0949 || MA-en-de:  3.7815 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:29 - 0:11:12 -    1525 -  187.15 sent/s -  1407.16 words/s - MA-de-en:  3.0785 || MA-en-de:  3.2207 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:31 - 0:11:15 -    1530 -  132.92 sent/s -  1683.11 words/s - MA-de-en:  3.9708 || MA-en-de:  3.7502 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:34 - 0:11:17 -    1535 -  138.54 sent/s -  1739.53 words/s - MA-de-en:  4.2394 || MA-en-de:  3.7766 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:36 - 0:11:19 -    1540 -  176.62 sent/s -  1507.37 words/s - MA-de-en:  3.5038 || MA-en-de:  3.3073 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:37 - 0:11:20 -    1545 -  176.34 sent/s -  1493.94 words/s - MA-de-en:  3.6576 || MA-en-de:  2.8494 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:39 - 0:11:22 -    1550 -  162.40 sent/s -  1566.66 words/s - MA-de-en:  4.0076 || MA-en-de:  3.0828 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:41 - 0:11:24 -    1555 -  160.34 sent/s -  1584.82 words/s - MA-de-en:  3.4291 || MA-en-de:  3.3004 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:43 - 0:11:26 -    1560 -  163.50 sent/s -  1521.10 words/s - MA-de-en:  4.1232 || MA-en-de:  2.6153 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:45 - 0:11:28 -    1565 -  171.52 sent/s -  1488.99 words/s - MA-de-en:  2.9480 || MA-en-de:  3.3006 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:47 - 0:11:30 -    1570 -  160.22 sent/s -  1587.65 words/s - MA-de-en:  4.3567 || MA-en-de:  3.0095 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:49 - 0:11:33 -    1575 -  135.82 sent/s -  1647.22 words/s - MA-de-en:  4.0678 || MA-en-de:  3.8285 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:51 - 0:11:34 -    1580 -  175.46 sent/s -  1382.27 words/s - MA-de-en:  2.6999 || MA-en-de:  3.5010 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:53 - 0:11:36 -    1585 -  171.38 sent/s -  1483.50 words/s - MA-de-en:  3.1900 || MA-en-de:  3.4201 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:56 - 0:11:39 -    1590 -  131.28 sent/s -  1738.17 words/s - MA-de-en:  4.1114 || MA-en-de:  4.0263 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:30:57 - 0:11:41 -    1595 -  171.94 sent/s -  1492.62 words/s - MA-de-en:  3.5434 || MA-en-de:  3.3328 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:00 - 0:11:43 -    1600 -  146.30 sent/s -  1613.36 words/s - MA-de-en:  3.8529 || MA-en-de:  3.3844 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:02 - 0:11:45 -    1605 -  154.86 sent/s -  1631.38 words/s - MA-de-en:  3.4866 || MA-en-de:  3.6071 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:04 - 0:11:47 -    1610 -  130.88 sent/s -  1757.04 words/s - MA-de-en:  4.3806 || MA-en-de:  3.6509 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:06 - 0:11:50 -    1615 -  141.74 sent/s -  1699.15 words/s - MA-de-en:  4.0889 || MA-en-de:  3.5829 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:09 - 0:11:52 -    1620 -  146.18 sent/s -  1609.80 words/s - MA-de-en:  4.2066 || MA-en-de:  2.1538 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:11 - 0:11:54 -    1625 -  155.69 sent/s -  1567.62 words/s - MA-de-en:  3.2501 || MA-en-de:  3.8215 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:13 - 0:11:56 -    1630 -  152.04 sent/s -  1573.12 words/s - MA-de-en:  4.1140 || MA-en-de:  3.0162 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:15 - 0:11:58 -    1635 -  148.07 sent/s -  1568.13 words/s - MA-de-en:  3.7163 || MA-en-de:  3.5696 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:17 - 0:12:01 -    1640 -  125.96 sent/s -  1731.97 words/s - MA-de-en:  4.6795 || MA-en-de:  3.7178 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:20 - 0:12:03 -    1645 -  148.56 sent/s -  1571.50 words/s - MA-de-en:  4.1257 || MA-en-de:  3.1788 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:22 - 0:12:05 -    1650 -  165.43 sent/s -  1563.29 words/s - MA-de-en:  3.6335 || MA-en-de:  3.7588 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:23 - 0:12:07 -    1655 -  165.88 sent/s -  1480.95 words/s - MA-de-en:  3.6752 || MA-en-de:  3.2767 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:25 - 0:12:09 -    1660 -  160.56 sent/s -  1595.09 words/s - MA-de-en:  4.1139 || MA-en-de:  3.0741 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:28 - 0:12:11 -    1665 -  144.35 sent/s -  1706.98 words/s - MA-de-en:  4.1742 || MA-en-de:  3.1779 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:30 - 0:12:13 -    1670 -  162.34 sent/s -  1579.26 words/s - MA-de-en:  3.9472 || MA-en-de:  3.0048 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:32 - 0:12:15 -    1675 -  168.65 sent/s -  1525.73 words/s - MA-de-en:  3.8304 || MA-en-de:  3.2419 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:34 - 0:12:17 -    1680 -  139.93 sent/s -  1678.68 words/s - MA-de-en:  4.2358 || MA-en-de:  3.6603 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:36 - 0:12:19 -    1685 -  142.15 sent/s -  1783.13 words/s - MA-de-en:  3.8817 || MA-en-de:  3.8573 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:38 - 0:12:21 -    1690 -  143.46 sent/s -  1585.73 words/s - MA-de-en:  2.9780 || MA-en-de:  3.9207 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:40 - 0:12:24 -    1695 -  151.99 sent/s -  1606.84 words/s - MA-de-en:  3.7675 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:43 - 0:12:26 -    1700 -  148.93 sent/s -  1580.04 words/s - MA-de-en:  4.0788 || MA-en-de:  3.4678 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:45 - 0:12:28 -    1705 -  150.63 sent/s -  1559.51 words/s - MA-de-en:  3.8692 || MA-en-de:  4.0841 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:47 - 0:12:30 -    1710 -  151.08 sent/s -  1664.67 words/s - MA-de-en:  4.1596 || MA-en-de:  2.8955 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:49 - 0:12:32 -    1715 -  142.05 sent/s -  1650.04 words/s - MA-de-en:  3.9574 || MA-en-de:  3.7196 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:51 - 0:12:34 -    1720 -  145.37 sent/s -  1640.44 words/s - MA-de-en:  4.5202 || MA-en-de:  2.8398 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:54 - 0:12:37 -    1725 -  137.40 sent/s -  1641.91 words/s - MA-de-en:  4.0417 || MA-en-de:  3.9533 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:56 - 0:12:39 -    1730 -  132.58 sent/s -  1702.83 words/s - MA-de-en:  4.2394 || MA-en-de:  3.7954 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:31:58 - 0:12:41 -    1735 -  180.81 sent/s -  1427.27 words/s - MA-de-en:  3.2226 || MA-en-de:  3.1413 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:00 - 0:12:43 -    1740 -  163.84 sent/s -  1533.95 words/s - MA-de-en:  3.7055 || MA-en-de:  3.1770 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:02 - 0:12:45 -    1745 -  172.05 sent/s -  1488.27 words/s - MA-de-en:  3.5364 || MA-en-de:  3.2719 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:04 - 0:12:47 -    1750 -  131.87 sent/s -  1730.79 words/s - MA-de-en:  4.4987 || MA-en-de:  3.4496 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:06 - 0:12:49 -    1755 -  149.94 sent/s -  1586.57 words/s - MA-de-en:  3.4423 || MA-en-de:  3.8125 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:08 - 0:12:51 -    1760 -  156.28 sent/s -  1605.28 words/s - MA-de-en:  4.2295 || MA-en-de:  3.2777 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:11 - 0:12:54 -    1765 -  131.82 sent/s -  1716.53 words/s - MA-de-en:  5.1925 || MA-en-de:  3.2888 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:13 - 0:12:56 -    1770 -  143.91 sent/s -  1640.62 words/s - MA-de-en:  3.9543 || MA-en-de:  3.8890 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:15 - 0:12:58 -    1775 -  164.77 sent/s -  1452.01 words/s - MA-de-en:  3.6850 || MA-en-de:  2.7886 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:17 - 0:13:00 -    1780 -  147.29 sent/s -  1626.17 words/s - MA-de-en:  4.0712 || MA-en-de:  2.7685 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:19 - 0:13:02 -    1785 -  155.88 sent/s -  1609.00 words/s - MA-de-en:  3.6869 || MA-en-de:  3.4770 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:21 - 0:13:04 -    1790 -  156.85 sent/s -  1592.99 words/s - MA-de-en:  3.8221 || MA-en-de:  3.0903 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:23 - 0:13:06 -    1795 -  158.93 sent/s -  1537.12 words/s - MA-de-en:  3.5356 || MA-en-de:  3.0728 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:25 - 0:13:09 -    1800 -  139.41 sent/s -  1576.64 words/s - MA-de-en:  3.7206 || MA-en-de:  3.8542 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:27 - 0:13:10 -    1805 -  164.92 sent/s -  1566.70 words/s - MA-de-en:  3.9922 || MA-en-de:  2.8141 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:29 - 0:13:13 -    1810 -  149.78 sent/s -  1601.21 words/s - MA-de-en:  4.2487 || MA-en-de:  3.2449 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:31 - 0:13:15 -    1815 -  157.41 sent/s -  1545.53 words/s - MA-de-en:  4.2967 || MA-en-de:  3.0850 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:34 - 0:13:17 -    1820 -  117.61 sent/s -  1639.21 words/s - MA-de-en:  4.2232 || MA-en-de:  4.4243 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:36 - 0:13:20 -    1825 -  140.55 sent/s -  1639.21 words/s - MA-de-en:  3.7788 || MA-en-de:  3.7914 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:39 - 0:13:22 -    1830 -  125.72 sent/s -  1753.81 words/s - MA-de-en:  4.6400 || MA-en-de:  3.7458 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:42 - 0:13:25 -    1835 -  129.99 sent/s -  1714.22 words/s - MA-de-en:  4.1887 || MA-en-de:  3.9684 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:44 - 0:13:27 -    1840 -  112.11 sent/s -  1807.06 words/s - MA-de-en:  4.4346 || MA-en-de:  4.0379 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:47 - 0:13:30 -    1845 -  137.18 sent/s -  1703.59 words/s - MA-de-en:  4.4186 || MA-en-de:  3.4335 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:48 - 0:13:32 -    1850 -  183.43 sent/s -  1377.99 words/s - MA-de-en:  1.9516 || MA-en-de:  3.4712 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:51 - 0:13:34 -    1855 -  131.04 sent/s -  1790.32 words/s - MA-de-en:  3.9759 || MA-en-de:  3.8993 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:53 - 0:13:36 -    1860 -  138.42 sent/s -  1662.29 words/s - MA-de-en:  3.5821 || MA-en-de:  4.0908 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:55 - 0:13:39 -    1865 -  140.48 sent/s -  1607.24 words/s - MA-de-en:  4.1590 || MA-en-de:  3.4295 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:32:58 - 0:13:41 -    1870 -  148.52 sent/s -  1660.14 words/s - MA-de-en:  3.9410 || MA-en-de:  3.5776 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:00 - 0:13:44 -    1875 -  115.13 sent/s -  1778.02 words/s - MA-de-en:  4.3575 || MA-en-de:  4.1943 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:02 - 0:13:46 -    1880 -  162.07 sent/s -  1446.96 words/s - MA-de-en:  3.3431 || MA-en-de:  3.5267 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:05 - 0:13:48 -    1885 -  139.63 sent/s -  1633.66 words/s - MA-de-en:  4.2448 || MA-en-de:  3.2779 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:07 - 0:13:50 -    1890 -  131.92 sent/s -  1654.32 words/s - MA-de-en:  4.1898 || MA-en-de:  3.8833 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:09 - 0:13:53 -    1895 -  136.02 sent/s -  1643.28 words/s - MA-de-en:  4.5775 || MA-en-de:  3.2985 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:12 - 0:13:55 -    1900 -  146.13 sent/s -  1600.08 words/s - MA-de-en:  3.5992 || MA-en-de:  3.5459 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:14 - 0:13:57 -    1905 -  153.53 sent/s -  1514.22 words/s - MA-de-en:  3.9683 || MA-en-de:  3.3984 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:16 - 0:13:59 -    1910 -  155.06 sent/s -  1552.06 words/s - MA-de-en:  3.6029 || MA-en-de:  3.1480 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:18 - 0:14:01 -    1915 -  146.94 sent/s -  1571.76 words/s - MA-de-en:  4.4128 || MA-en-de:  2.6644 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:20 - 0:14:03 -    1920 -  144.46 sent/s -  1590.44 words/s - MA-de-en:  4.2638 || MA-en-de:  2.5253 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:22 - 0:14:06 -    1925 -  144.16 sent/s -  1662.35 words/s - MA-de-en:  4.0638 || MA-en-de:  3.1359 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:25 - 0:14:08 -    1930 -  135.72 sent/s -  1626.50 words/s - MA-de-en:  4.3073 || MA-en-de:  3.8753 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:27 - 0:14:10 -    1935 -  152.02 sent/s -  1466.51 words/s - MA-de-en:  3.2727 || MA-en-de:  3.3893 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:29 - 0:14:12 -    1940 -  157.02 sent/s -  1530.44 words/s - MA-de-en:  4.0696 || MA-en-de:  2.9566 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:31 - 0:14:15 -    1945 -  125.33 sent/s -  1691.93 words/s - MA-de-en:  4.7786 || MA-en-de:  3.5001 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:34 - 0:14:17 -    1950 -  133.59 sent/s -  1625.68 words/s - MA-de-en:  4.2684 || MA-en-de:  3.2931 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:36 - 0:14:19 -    1955 -  135.24 sent/s -  1668.94 words/s - MA-de-en:  4.3074 || MA-en-de:  3.2997 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:39 - 0:14:22 -    1960 -  120.56 sent/s -  1678.80 words/s - MA-de-en:  4.8012 || MA-en-de:  3.2140 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:41 - 0:14:24 -    1965 -  161.46 sent/s -  1416.27 words/s - MA-de-en:  3.0765 || MA-en-de:  3.4950 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:43 - 0:14:26 -    1970 -  168.06 sent/s -  1457.43 words/s - MA-de-en:  3.3159 || MA-en-de:  3.4675 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:45 - 0:14:28 -    1975 -  154.94 sent/s -  1530.49 words/s - MA-de-en:  3.5356 || MA-en-de:  3.6455 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:47 - 0:14:30 -    1980 -  144.61 sent/s -  1593.92 words/s - MA-de-en:  4.2266 || MA-en-de:  3.3402 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:49 - 0:14:32 -    1985 -  168.89 sent/s -  1473.60 words/s - MA-de-en:  3.9564 || MA-en-de:  2.7878 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:51 - 0:14:34 -    1990 -  161.37 sent/s -  1526.95 words/s - MA-de-en:  3.7133 || MA-en-de:  2.8904 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:53 - 0:14:36 -    1995 -  153.54 sent/s -  1569.93 words/s - MA-de-en:  4.1328 || MA-en-de:  3.4769 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:55 - 0:14:38 -    2000 -  146.38 sent/s -  1554.87 words/s - MA-de-en:  3.4274 || MA-en-de:  3.7191 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:33:58 - 0:14:41 -    2005 -  135.73 sent/s -  1662.33 words/s - MA-de-en:  4.2588 || MA-en-de:  3.2957 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:00 - 0:14:43 -    2010 -  137.43 sent/s -  1601.96 words/s - MA-de-en:  3.7634 || MA-en-de:  3.5117 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:02 - 0:14:45 -    2015 -  139.87 sent/s -  1625.12 words/s - MA-de-en:  3.4131 || MA-en-de:  3.9868 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:04 - 0:14:47 -    2020 -  155.31 sent/s -  1582.75 words/s - MA-de-en:  4.2238 || MA-en-de:  3.1806 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:06 - 0:14:50 -    2025 -  147.02 sent/s -  1548.32 words/s - MA-de-en:  4.2218 || MA-en-de:  3.1335 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:09 - 0:14:52 -    2030 -  136.82 sent/s -  1694.04 words/s - MA-de-en:  4.1659 || MA-en-de:  2.7183 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:11 - 0:14:55 -    2035 -  116.61 sent/s -  1710.90 words/s - MA-de-en:  4.2293 || MA-en-de:  4.1467 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:14 - 0:14:57 -    2040 -  143.25 sent/s -  1648.70 words/s - MA-de-en:  4.2325 || MA-en-de:  3.2350 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:16 - 0:14:59 -    2045 -  131.75 sent/s -  1658.80 words/s - MA-de-en:  4.3439 || MA-en-de:  3.5756 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:18 - 0:15:01 -    2050 -  157.37 sent/s -  1518.60 words/s - MA-de-en:  3.2810 || MA-en-de:  3.5339 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:20 - 0:15:03 -    2055 -  148.59 sent/s -  1565.74 words/s - MA-de-en:  3.8680 || MA-en-de:  3.3465 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:23 - 0:15:06 -    2060 -  137.42 sent/s -  1654.20 words/s - MA-de-en:  3.6276 || MA-en-de:  3.7690 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:25 - 0:15:08 -    2065 -  129.51 sent/s -  1685.30 words/s - MA-de-en:  4.4719 || MA-en-de:  3.6933 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:27 - 0:15:10 -    2070 -  148.67 sent/s -  1555.91 words/s - MA-de-en:  3.8833 || MA-en-de:  3.4176 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:30 - 0:15:13 -    2075 -  105.49 sent/s -  1722.18 words/s - MA-de-en:  4.6615 || MA-en-de:  3.4495 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:33 - 0:15:16 -    2080 -  131.15 sent/s -  1665.26 words/s - MA-de-en:  4.4059 || MA-en-de:  2.8808 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:35 - 0:15:18 -    2085 -  151.00 sent/s -  1547.23 words/s - MA-de-en:  3.8117 || MA-en-de:  3.3922 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:37 - 0:15:20 -    2090 -  155.03 sent/s -  1480.07 words/s - MA-de-en:  4.0262 || MA-en-de:  2.6892 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:39 - 0:15:22 -    2095 -  165.49 sent/s -  1459.94 words/s - MA-de-en:  2.9033 || MA-en-de:  3.5914 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:41 - 0:15:24 -    2100 -  166.20 sent/s -  1516.58 words/s - MA-de-en:  3.7314 || MA-en-de:  2.8928 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:43 - 0:15:26 -    2105 -  138.41 sent/s -  1646.60 words/s - MA-de-en:  3.6235 || MA-en-de:  3.8355 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:45 - 0:15:28 -    2110 -  145.64 sent/s -  1572.97 words/s - MA-de-en:  3.8801 || MA-en-de:  3.4659 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:47 - 0:15:30 -    2115 -  182.34 sent/s -  1373.24 words/s - MA-de-en:  2.9427 || MA-en-de:  3.2943 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:49 - 0:15:32 -    2120 -  161.65 sent/s -  1466.48 words/s - MA-de-en:  3.4821 || MA-en-de:  3.3364 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:51 - 0:15:34 -    2125 -  170.10 sent/s -  1411.26 words/s - MA-de-en:  3.4047 || MA-en-de:  2.6023 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:54 - 0:15:37 -    2130 -  120.13 sent/s -  1744.88 words/s - MA-de-en:  4.1881 || MA-en-de:  3.5439 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:56 - 0:15:39 -    2135 -  146.36 sent/s -  1555.55 words/s - MA-de-en:  4.0213 || MA-en-de:  3.0054 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:34:58 - 0:15:41 -    2140 -  146.93 sent/s -  1605.71 words/s - MA-de-en:  4.0391 || MA-en-de:  2.6285 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:00 - 0:15:44 -    2145 -  128.16 sent/s -  1643.23 words/s - MA-de-en:  4.5027 || MA-en-de:  3.5065 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:02 - 0:15:46 -    2150 -  157.16 sent/s -  1506.27 words/s - MA-de-en:  3.1233 || MA-en-de:  3.1308 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:05 - 0:15:48 -    2155 -  128.24 sent/s -  1752.84 words/s - MA-de-en:  4.6602 || MA-en-de:  3.5720 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:07 - 0:15:50 -    2160 -  165.91 sent/s -  1494.77 words/s - MA-de-en:  3.3270 || MA-en-de:  3.5468 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:09 - 0:15:52 -    2165 -  154.82 sent/s -  1483.40 words/s - MA-de-en:  3.9406 || MA-en-de:  3.2149 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:11 - 0:15:54 -    2170 -  151.29 sent/s -  1576.21 words/s - MA-de-en:  3.7885 || MA-en-de:  3.5117 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:13 - 0:15:56 -    2175 -  164.01 sent/s -  1474.53 words/s - MA-de-en:  3.7003 || MA-en-de:  2.4650 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:15 - 0:15:58 -    2180 -  167.28 sent/s -  1488.26 words/s - MA-de-en:  3.8772 || MA-en-de:  3.0257 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:17 - 0:16:00 -    2185 -  156.86 sent/s -  1561.28 words/s - MA-de-en:  4.0764 || MA-en-de:  2.9894 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:19 - 0:16:02 -    2190 -  136.33 sent/s -  1617.22 words/s - MA-de-en:  4.3766 || MA-en-de:  2.7821 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:21 - 0:16:05 -    2195 -  151.89 sent/s -  1525.97 words/s - MA-de-en:  3.9053 || MA-en-de:  3.3250 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:23 - 0:16:07 -    2200 -  156.95 sent/s -  1561.69 words/s - MA-de-en:  3.9486 || MA-en-de:  2.4803 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:25 - 0:16:09 -    2205 -  167.10 sent/s -  1481.99 words/s - MA-de-en:  2.8747 || MA-en-de:  3.3367 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:28 - 0:16:11 -    2210 -  136.39 sent/s -  1686.12 words/s - MA-de-en:  3.8585 || MA-en-de:  3.4457 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:30 - 0:16:13 -    2215 -  158.56 sent/s -  1487.03 words/s - MA-de-en:  3.2396 || MA-en-de:  3.1783 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:32 - 0:16:15 -    2220 -  171.40 sent/s -  1447.76 words/s - MA-de-en:  4.1658 || MA-en-de:  2.6161 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:35 - 0:16:18 -    2225 -  108.28 sent/s -  1728.71 words/s - MA-de-en:  4.9117 || MA-en-de:  3.4969 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:37 - 0:16:20 -    2230 -  157.85 sent/s -  1516.87 words/s - MA-de-en:  4.0540 || MA-en-de:  2.9372 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:39 - 0:16:22 -    2235 -  131.16 sent/s -  1669.00 words/s - MA-de-en:  4.6040 || MA-en-de:  3.3908 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:41 - 0:16:24 -    2240 -  140.29 sent/s -  1732.14 words/s - MA-de-en:  4.2972 || MA-en-de:  3.4427 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:43 - 0:16:27 -    2245 -  154.23 sent/s -  1545.64 words/s - MA-de-en:  3.7803 || MA-en-de:  2.9798 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:45 - 0:16:29 -    2250 -  156.42 sent/s -  1558.33 words/s - MA-de-en:  3.4448 || MA-en-de:  3.5809 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:48 - 0:16:31 -    2255 -  145.62 sent/s -  1647.83 words/s - MA-de-en:  3.9642 || MA-en-de:  3.4459 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:50 - 0:16:33 -    2260 -  167.04 sent/s -  1489.30 words/s - MA-de-en:  3.3829 || MA-en-de:  3.3530 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:52 - 0:16:35 -    2265 -  141.17 sent/s -  1667.11 words/s - MA-de-en:  4.0286 || MA-en-de:  3.5383 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:54 - 0:16:37 -    2270 -  184.15 sent/s -  1380.53 words/s - MA-de-en:  3.1247 || MA-en-de:  2.9789 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:56 - 0:16:39 -    2275 -  157.21 sent/s -  1604.02 words/s - MA-de-en:  3.3237 || MA-en-de:  3.2489 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:35:58 - 0:16:41 -    2280 -  134.69 sent/s -  1703.37 words/s - MA-de-en:  4.2976 || MA-en-de:  3.5972 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:00 - 0:16:44 -    2285 -  129.86 sent/s -  1689.75 words/s - MA-de-en:  3.7939 || MA-en-de:  3.6437 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:03 - 0:16:46 -    2290 -  151.12 sent/s -  1572.12 words/s - MA-de-en:  4.3442 || MA-en-de:  2.9440 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:05 - 0:16:48 -    2295 -  157.54 sent/s -  1623.17 words/s - MA-de-en:  3.7214 || MA-en-de:  3.1028 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:07 - 0:16:50 -    2300 -  119.15 sent/s -  1786.49 words/s - MA-de-en:  4.5125 || MA-en-de:  3.6978 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:09 - 0:16:52 -    2305 -  155.08 sent/s -  1528.95 words/s - MA-de-en:  3.3391 || MA-en-de:  3.3123 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:11 - 0:16:54 -    2310 -  164.73 sent/s -  1521.17 words/s - MA-de-en:  2.4665 || MA-en-de:  3.2218 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:14 - 0:16:57 -    2315 -  133.86 sent/s -  1764.49 words/s - MA-de-en:  4.0140 || MA-en-de:  2.1233 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:16 - 0:16:59 -    2320 -  151.97 sent/s -  1543.92 words/s - MA-de-en:  2.9293 || MA-en-de:  3.6883 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:18 - 0:17:01 -    2325 -  161.48 sent/s -  1567.34 words/s - MA-de-en:  3.7239 || MA-en-de:  3.1988 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:20 - 0:17:03 -    2330 -  126.89 sent/s -  1727.64 words/s - MA-de-en:  3.9025 || MA-en-de:  4.0811 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:22 - 0:17:05 -    2335 -  160.94 sent/s -  1542.04 words/s - MA-de-en:  3.8019 || MA-en-de:  2.8369 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:25 - 0:17:08 -    2340 -  132.64 sent/s -  1670.90 words/s - MA-de-en:  3.2869 || MA-en-de:  3.9054 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:27 - 0:17:10 -    2345 -  150.41 sent/s -  1618.27 words/s - MA-de-en:  4.1488 || MA-en-de:  3.1699 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:29 - 0:17:12 -    2350 -  166.58 sent/s -  1563.22 words/s - MA-de-en:  3.7226 || MA-en-de:  2.9969 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:31 - 0:17:14 -    2355 -  157.40 sent/s -  1533.67 words/s - MA-de-en:  3.6700 || MA-en-de:  3.7471 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:33 - 0:17:16 -    2360 -  147.72 sent/s -  1558.02 words/s - MA-de-en:  4.1823 || MA-en-de:  2.9808 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:35 - 0:17:18 -    2365 -  153.49 sent/s -  1594.36 words/s - MA-de-en:  3.2486 || MA-en-de:  3.2544 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:38 - 0:17:21 -    2370 -  118.22 sent/s -  1751.46 words/s - MA-de-en:  4.2547 || MA-en-de:  3.8002 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:40 - 0:17:23 -    2375 -  164.28 sent/s -  1549.92 words/s - MA-de-en:  4.0617 || MA-en-de:  2.9950 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:42 - 0:17:25 -    2380 -  140.59 sent/s -  1645.33 words/s - MA-de-en:  4.0556 || MA-en-de:  3.3222 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:44 - 0:17:27 -    2385 -  179.94 sent/s -  1459.76 words/s - MA-de-en:  3.4791 || MA-en-de:  2.8608 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:46 - 0:17:29 -    2390 -  139.14 sent/s -  1708.82 words/s - MA-de-en:  3.8350 || MA-en-de:  3.8270 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:49 - 0:17:32 -    2395 -  127.64 sent/s -  1769.45 words/s - MA-de-en:  4.1146 || MA-en-de:  3.7493 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:51 - 0:17:34 -    2400 -  133.39 sent/s -  1679.46 words/s - MA-de-en:  4.1358 || MA-en-de:  3.2297 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:53 - 0:17:36 -    2405 -  141.90 sent/s -  1748.91 words/s - MA-de-en:  3.9526 || MA-en-de:  3.4437 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:55 - 0:17:38 -    2410 -  185.49 sent/s -  1457.81 words/s - MA-de-en:  3.0031 || MA-en-de:  2.7287 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:57 - 0:17:40 -    2415 -  164.72 sent/s -  1491.75 words/s - MA-de-en:  3.9559 || MA-en-de:  3.2302 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:36:59 - 0:17:42 -    2420 -  127.69 sent/s -  1791.71 words/s - MA-de-en:  4.4292 || MA-en-de:  3.4020 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:01 - 0:17:44 -    2425 -  181.58 sent/s -  1508.83 words/s - MA-de-en:  3.4952 || MA-en-de:  2.9228 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:03 - 0:17:46 -    2430 -  164.67 sent/s -  1465.55 words/s - MA-de-en:  4.1407 || MA-en-de:  2.4581 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:05 - 0:17:49 -    2435 -  137.23 sent/s -  1687.02 words/s - MA-de-en:  4.1984 || MA-en-de:  3.6319 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:08 - 0:17:51 -    2440 -  148.31 sent/s -  1559.06 words/s - MA-de-en:  3.6875 || MA-en-de:  3.3212 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:10 - 0:17:53 -    2445 -  156.45 sent/s -  1529.76 words/s - MA-de-en:  3.6623 || MA-en-de:  3.2216 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:12 - 0:17:55 -    2450 -  138.54 sent/s -  1738.65 words/s - MA-de-en:  3.6238 || MA-en-de:  3.8843 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:14 - 0:17:57 -    2455 -  134.36 sent/s -  1700.90 words/s - MA-de-en:  4.2782 || MA-en-de:  2.6611 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:17 - 0:18:00 -    2460 -  123.53 sent/s -  1756.08 words/s - MA-de-en:  4.1478 || MA-en-de:  4.2107 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:19 - 0:18:02 -    2465 -  177.11 sent/s -  1458.95 words/s - MA-de-en:  3.2679 || MA-en-de:  2.9570 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:21 - 0:18:04 -    2470 -  173.54 sent/s -  1497.83 words/s - MA-de-en:  2.8533 || MA-en-de:  3.1394 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:23 - 0:18:06 -    2475 -  159.96 sent/s -  1521.58 words/s - MA-de-en:  3.6284 || MA-en-de:  3.3208 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:24 - 0:18:07 -    2480 -  175.74 sent/s -  1408.69 words/s - MA-de-en:  3.3607 || MA-en-de:  2.2183 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:26 - 0:18:10 -    2485 -  150.50 sent/s -  1556.78 words/s - MA-de-en:  2.2463 || MA-en-de:  3.6836 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:29 - 0:18:12 -    2490 -  157.52 sent/s -  1468.35 words/s - MA-de-en:  3.6141 || MA-en-de:  2.9200 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:31 - 0:18:14 -    2495 -  159.83 sent/s -  1517.37 words/s - MA-de-en:  3.7657 || MA-en-de:  2.9999 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:33 - 0:18:16 -    2500 -  148.82 sent/s -  1642.61 words/s - MA-de-en:  3.8414 || MA-en-de:  3.3499 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:35 - 0:18:18 -    2505 -  158.26 sent/s -  1501.46 words/s - MA-de-en:  3.8031 || MA-en-de:  2.9851 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:37 - 0:18:21 -    2510 -  115.83 sent/s -  1632.78 words/s - MA-de-en:  4.1173 || MA-en-de:  3.7146 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:39 - 0:18:22 -    2515 -  174.74 sent/s -  1509.30 words/s - MA-de-en:  3.8311 || MA-en-de:  2.7859 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:41 - 0:18:24 -    2520 -  177.79 sent/s -  1444.01 words/s - MA-de-en:  3.0123 || MA-en-de:  3.0606 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:43 - 0:18:26 -    2525 -  141.51 sent/s -  1588.03 words/s - MA-de-en:  4.0825 || MA-en-de:  3.1709 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:46 - 0:18:29 -    2530 -  136.84 sent/s -  1661.80 words/s - MA-de-en:  3.7099 || MA-en-de:  2.8072 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:48 - 0:18:31 -    2535 -  153.82 sent/s -  1564.65 words/s - MA-de-en:  3.3541 || MA-en-de:  3.5282 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:50 - 0:18:33 -    2540 -  148.07 sent/s -  1604.22 words/s - MA-de-en:  3.7363 || MA-en-de:  3.5780 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:52 - 0:18:35 -    2545 -  135.06 sent/s -  1700.03 words/s - MA-de-en:  3.1559 || MA-en-de:  3.6699 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:55 - 0:18:38 -    2550 -  138.88 sent/s -  1669.60 words/s - MA-de-en:  4.5659 || MA-en-de:  3.1825 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:56 - 0:18:40 -    2555 -  168.76 sent/s -  1440.23 words/s - MA-de-en:  3.3417 || MA-en-de:  3.1895 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:37:59 - 0:18:42 -    2560 -  156.52 sent/s -  1542.17 words/s - MA-de-en:  3.3946 || MA-en-de:  4.4276 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:00 - 0:18:44 -    2565 -  164.44 sent/s -  1569.35 words/s - MA-de-en:  3.7703 || MA-en-de:  3.0191 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:03 - 0:18:46 -    2570 -  138.10 sent/s -  1680.98 words/s - MA-de-en:  3.9499 || MA-en-de:  3.7047 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:05 - 0:18:48 -    2575 -  176.07 sent/s -  1442.09 words/s - MA-de-en:  2.7715 || MA-en-de:  3.2717 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:07 - 0:18:50 -    2580 -  143.13 sent/s -  1603.07 words/s - MA-de-en:  3.9463 || MA-en-de:  3.3297 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:09 - 0:18:53 -    2585 -  126.58 sent/s -  1782.81 words/s - MA-de-en:  4.3405 || MA-en-de:  3.6459 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:11 - 0:18:55 -    2590 -  152.48 sent/s -  1629.64 words/s - MA-de-en:  3.4565 || MA-en-de:  3.6383 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:14 - 0:18:57 -    2595 -  153.34 sent/s -  1573.12 words/s - MA-de-en:  3.4150 || MA-en-de:  2.9929 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:16 - 0:18:59 -    2600 -  159.15 sent/s -  1554.15 words/s - MA-de-en:  4.3319 || MA-en-de:  2.6873 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:18 - 0:19:01 -    2605 -  139.53 sent/s -  1692.25 words/s - MA-de-en:  4.6654 || MA-en-de:  3.5607 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:20 - 0:19:03 -    2610 -  151.96 sent/s -  1568.99 words/s - MA-de-en:  3.9022 || MA-en-de:  3.2038 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:22 - 0:19:05 -    2615 -  167.26 sent/s -  1541.96 words/s - MA-de-en:  3.8907 || MA-en-de:  2.2543 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:24 - 0:19:07 -    2620 -  133.67 sent/s -  1716.81 words/s - MA-de-en:  4.1915 || MA-en-de:  3.3115 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:27 - 0:19:10 -    2625 -  135.59 sent/s -  1692.79 words/s - MA-de-en:  4.1397 || MA-en-de:  3.0834 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:29 - 0:19:12 -    2630 -  158.88 sent/s -  1493.47 words/s - MA-de-en:  3.2174 || MA-en-de:  3.5104 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:31 - 0:19:14 -    2635 -  139.78 sent/s -  1678.22 words/s - MA-de-en:  3.4072 || MA-en-de:  3.8846 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:33 - 0:19:16 -    2640 -  141.80 sent/s -  1714.85 words/s - MA-de-en:  3.1400 || MA-en-de:  3.5425 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:35 - 0:19:19 -    2645 -  142.96 sent/s -  1605.64 words/s - MA-de-en:  3.6767 || MA-en-de:  3.9305 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:38 - 0:19:21 -    2650 -  139.70 sent/s -  1650.26 words/s - MA-de-en:  4.1769 || MA-en-de:  3.1116 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:40 - 0:19:23 -    2655 -  146.41 sent/s -  1706.09 words/s - MA-de-en:  3.9907 || MA-en-de:  3.3183 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:42 - 0:19:25 -    2660 -  147.57 sent/s -  1607.58 words/s - MA-de-en:  4.4042 || MA-en-de:  2.9365 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:44 - 0:19:27 -    2665 -  181.54 sent/s -  1422.86 words/s - MA-de-en:  2.9977 || MA-en-de:  2.9181 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:46 - 0:19:29 -    2670 -  145.38 sent/s -  1596.91 words/s - MA-de-en:  4.1560 || MA-en-de:  3.3955 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:48 - 0:19:31 -    2675 -  164.29 sent/s -  1564.32 words/s - MA-de-en:  3.9139 || MA-en-de:  2.7290 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:50 - 0:19:34 -    2680 -  130.14 sent/s -  1760.55 words/s - MA-de-en:  4.8183 || MA-en-de:  3.3409 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:53 - 0:19:36 -    2685 -  133.29 sent/s -  1726.05 words/s - MA-de-en:  4.4618 || MA-en-de:  3.3278 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:55 - 0:19:39 -    2690 -  123.46 sent/s -  1754.31 words/s - MA-de-en:  3.7203 || MA-en-de:  3.7965 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:38:57 - 0:19:40 -    2695 -  175.46 sent/s -  1476.58 words/s - MA-de-en:  3.4119 || MA-en-de:  2.9952 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:00 - 0:19:43 -    2700 -  135.79 sent/s -  1682.12 words/s - MA-de-en:  4.0656 || MA-en-de:  3.6365 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:02 - 0:19:45 -    2705 -  162.27 sent/s -  1583.65 words/s - MA-de-en:  3.6910 || MA-en-de:  3.1351 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:04 - 0:19:47 -    2710 -  142.12 sent/s -  1540.17 words/s - MA-de-en:  3.2719 || MA-en-de:  3.6461 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:06 - 0:19:49 -    2715 -  127.43 sent/s -  1712.00 words/s - MA-de-en:  3.9740 || MA-en-de:  3.3801 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:09 - 0:19:52 -    2720 -  137.27 sent/s -  1678.99 words/s - MA-de-en:  4.8474 || MA-en-de:  3.3175 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:11 - 0:19:54 -    2725 -  132.32 sent/s -  1699.94 words/s - MA-de-en:  4.4504 || MA-en-de:  3.0089 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:13 - 0:19:57 -    2730 -  137.39 sent/s -  1596.75 words/s - MA-de-en:  2.5052 || MA-en-de:  3.5499 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:15 - 0:19:59 -    2735 -  163.91 sent/s -  1516.18 words/s - MA-de-en:  3.0862 || MA-en-de:  3.0813 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:17 - 0:20:00 -    2740 -  186.46 sent/s -  1399.65 words/s - MA-de-en:  3.5512 || MA-en-de:  2.0037 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:19 - 0:20:02 -    2745 -  175.51 sent/s -  1527.48 words/s - MA-de-en:  3.1494 || MA-en-de:  3.0299 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:21 - 0:20:04 -    2750 -  137.52 sent/s -  1657.17 words/s - MA-de-en:  4.5814 || MA-en-de:  2.9460 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:24 - 0:20:07 -    2755 -  135.93 sent/s -  1592.89 words/s - MA-de-en:  4.0180 || MA-en-de:  3.3062 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:26 - 0:20:09 -    2760 -  166.78 sent/s -  1504.16 words/s - MA-de-en:  3.8750 || MA-en-de:  3.0521 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:28 - 0:20:11 -    2765 -  137.54 sent/s -  1641.06 words/s - MA-de-en:  3.4155 || MA-en-de:  3.7143 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:30 - 0:20:13 -    2770 -  132.94 sent/s -  1709.10 words/s - MA-de-en:  3.6761 || MA-en-de:  3.5824 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:33 - 0:20:16 -    2775 -  142.33 sent/s -  1619.92 words/s - MA-de-en:  3.7888 || MA-en-de:  3.6844 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:35 - 0:20:18 -    2780 -  149.17 sent/s -  1523.87 words/s - MA-de-en:  3.8119 || MA-en-de:  3.2336 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:37 - 0:20:20 -    2785 -  142.14 sent/s -  1661.21 words/s - MA-de-en:  3.6950 || MA-en-de:  3.6200 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:39 - 0:20:22 -    2790 -  167.23 sent/s -  1562.56 words/s - MA-de-en:  3.3734 || MA-en-de:  2.6650 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:41 - 0:20:24 -    2795 -  160.83 sent/s -  1483.64 words/s - MA-de-en:  3.7304 || MA-en-de:  2.7085 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:43 - 0:20:26 -    2800 -  137.07 sent/s -  1610.16 words/s - MA-de-en:  4.8471 || MA-en-de:  2.7765 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:45 - 0:20:28 -    2805 -  149.19 sent/s -  1620.52 words/s - MA-de-en:  2.8805 || MA-en-de:  3.4237 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:48 - 0:20:31 -    2810 -  126.60 sent/s -  1703.89 words/s - MA-de-en:  3.9031 || MA-en-de:  3.8961 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:51 - 0:20:34 -    2815 -  108.49 sent/s -  1844.33 words/s - MA-de-en:  4.5090 || MA-en-de:  3.7750 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:53 - 0:20:36 -    2820 -  133.81 sent/s -  1746.26 words/s - MA-de-en:  4.4625 || MA-en-de:  3.0358 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:56 - 0:20:39 -    2825 -  122.60 sent/s -  1708.70 words/s - MA-de-en:  3.9104 || MA-en-de:  4.2381 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:39:58 - 0:20:41 -    2830 -  170.84 sent/s -  1425.41 words/s - MA-de-en:  2.5307 || MA-en-de:  3.5705 - Transformer LR = 1.0000e-04
+INFO - 06/15/19 22:40:00 - 0:20:43 -    2835 -  135.38 sent/s -  1681.73 words/s - MA-de-en:  3.6792 || MA-en-de:  3.8191 - Transformer LR = 1.0000e-04
+pretrain_enfr.sh: line 25: 11624 Killed                  python train.py --exp_name test_deen_mlm --dump_path ../dumped/ --data_path /data4/bjji/source/github/data/tlm/en_de --lgs 'de-en' --emb_dim 1024 --n_layers 6 --n_heads 8 --dropout 0.1 --attention_dropout 0.1 --gelu_activation true --batch_size 32 --bptt 256 --optimizer adam,lr=0.0001 --epoch_size 200000 --validation_metrics valid_en-de_mlm_acc --mass_steps "de-en,en-de" --mass_type "block" --block_size 0.5 --reload_model '/data4/bjji/source/github/model/mlm_base/mlm_ende_1024.pth' --stopping_criterion valid_en-de_mlm_acc,20 --save_periodic 1

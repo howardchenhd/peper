@@ -13,7 +13,7 @@ import numpy as np
 import torch
 
 from ..utils import to_cuda, restore_segmentation, concat_batches
-
+import random
 
 BLEU_SCRIPT_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'multi-bleu.perl')
 assert os.path.isfile(BLEU_SCRIPT_PATH)
@@ -153,7 +153,7 @@ class Evaluator(object):
         _x_mask = _x_real.clone().fill_(params.mask_index)
         x = x.masked_scatter(pred_mask, _x_mask)
 
-        assert 0 <= x.min() <= x.max() < params.n_words
+        assert 0 <= x.min() <= x.max() < params.n_words['src']
         assert x.size() == (slen, bs)
         assert pred_mask.size() == (slen, bs)
 
@@ -177,6 +177,10 @@ class Evaluator(object):
                 # prediction task (evaluate perplexity and accuracy)
                 for lang1, lang2 in params.mlm_steps:
                     self.evaluate_mlm(scores, data_set, lang1, lang2)
+
+                for lang1, lang2 in params.mass_steps:
+                    self.evaluate_mass(scores, data_set, lang1, lang2)
+
 
                 # machine translation task (evaluate perplexity and accuracy)
                 for lang1, lang2 in set(params.mt_steps + [(l2, l3) for _, l2, l3 in params.bt_steps]):
@@ -303,6 +307,144 @@ class Evaluator(object):
         acc_name = '%s_%s_mlm_acc' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_acc' % (data_set, lang1, lang2)
         scores[ppl_name] = np.exp(xe_loss / n_words) if n_words > 0 else 1e9
         scores[acc_name] = 100. * n_valid / n_words if n_words > 0 else 0.
+
+    def mask_block(self, x, len1):
+
+        params = self.params
+        slen, bs = x.size()
+        pred_mask = x.data.new(x.size()).fill_(0).byte()
+
+        for i in range(bs):
+            length = len1[i].item() - 2
+
+            if length == 1:
+                pred_mask[1, i] = 1
+                continue
+
+            start = random.randint(1, length)
+            end = start + int(params.block_size * length)
+
+            if end > length + 1:
+                end = length + 1
+            pred_mask[start:end, i] = 1
+
+        _x_real = x[pred_mask]
+        x[pred_mask] = params.mask_index
+
+        return x, _x_real, pred_mask
+
+
+    def evaluate_mass(self, scores, data_set, lang1, lang2):
+        """
+        Evaluate perplexity and next word prediction accuracy.
+        """
+        params = self.params
+        assert data_set in ['valid', 'test']
+        assert lang1 in params.langs
+        assert lang2 in params.langs or lang2 is None
+
+        model = self.model if params.encoder_only else self.encoder
+        model.eval()
+        model = model.module if params.multi_gpu else model
+
+        rng = np.random.RandomState(0)
+
+        lang1_id = params.lang2id[lang1]
+        lang2_id = params.lang2id[lang2] if lang2 is not None else None
+
+        n_words = 0
+        xe_loss = 0
+        n_valid = 0
+
+        for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None)):
+
+            (x1, len1), (x2, len2) = batch
+
+            if params.mass_type == 'block':
+                x1, y1, pred_mask = self.mask_block(x1, len1)
+
+            max_len = (len1 + len2).max().item()
+            bsz = x1.size(1)
+            real_pred_mask = pred_mask.new(max_len, bsz).fill_(0)
+            real_pred_mask[:len1.max(), :].copy_(pred_mask)
+            pred_mask = real_pred_mask
+
+            x, lengths, positions, langs = concat_batches(x1, len1, lang1_id, x2, len2, lang2_id, params.pad_index,
+                                                          params.eos_index, reset_positions=True)
+
+            # cuda
+            x, y, pred_mask, lengths, positions, langs = to_cuda(x, y1, pred_mask, lengths, positions, langs)
+            # forward / loss
+            tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
+            word_scores, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=True)
+
+            # update stats
+            n_words += len(y)
+            xe_loss += loss.item() * len(y)
+            n_valid += (word_scores.max(1)[1] == y).sum().item()
+
+        # compute perplexity and prediction accuracy
+        ppl_name = '%s_%s_mlm_ppl' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_ppl' % (data_set, lang1, lang2)
+        acc_name = '%s_%s_mlm_acc' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_acc' % (data_set, lang1, lang2)
+        scores[ppl_name] = np.exp(xe_loss / n_words) if n_words > 0 else 1e9
+        scores[acc_name] = 100. * n_valid / n_words if n_words > 0 else 0.
+
+
+
+
+    # def evaluate_mass(self, scores, data_set, lang1, lang2):
+    #     """
+    #     Evaluate perplexity and next word prediction accuracy.
+    #     """
+    #     params = self.params
+    #     assert data_set in ['valid', 'test']
+    #     assert lang1 in params.langs
+    #     assert lang2 in params.langs or lang2 is None
+    #
+    #     model = self.model if params.encoder_only else self.encoder
+    #     model.eval()
+    #     model = model.module if params.multi_gpu else model
+    #
+    #     rng = np.random.RandomState(0)
+    #
+    #     lang1_id = params.lang2id[lang1]
+    #     lang2_id = params.lang2id[lang2] if lang2 is not None else None
+    #
+    #     n_words = 0
+    #     xe_loss = 0
+    #     n_valid = 0
+    #
+    #     for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None)):
+    #
+    #         # batch
+    #         if lang2 is None:
+    #             x, lengths = batch
+    #             positions = None
+    #             langs = x.clone().fill_(lang1_id) if params.n_langs > 1 else None
+    #         else:
+    #             (sent1, len1), (sent2, len2) = batch
+    #             x, lengths, positions, langs = concat_batches(sent1, len1, lang1_id, sent2, len2, lang2_id, params.pad_index, params.eos_index, reset_positions=True)
+    #
+    #         # words to predict
+    #         x, y, pred_mask = self.mask_out(x, lengths, rng)
+    #
+    #         # cuda
+    #         x, y, pred_mask, lengths, positions, langs = to_cuda(x, y, pred_mask, lengths, positions, langs)
+    #
+    #         # forward / loss
+    #         tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
+    #         word_scores, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=True)
+    #
+    #         # update stats
+    #         n_words += len(y)
+    #         xe_loss += loss.item() * len(y)
+    #         n_valid += (word_scores.max(1)[1] == y).sum().item()
+    #
+    #     # compute perplexity and prediction accuracy
+    #     ppl_name = '%s_%s_mlm_ppl' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_ppl' % (data_set, lang1, lang2)
+    #     acc_name = '%s_%s_mlm_acc' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_acc' % (data_set, lang1, lang2)
+    #     scores[ppl_name] = np.exp(xe_loss / n_words) if n_words > 0 else 1e9
+    #     scores[acc_name] = 100. * n_valid / n_words if n_words > 0 else 0.
 
 
 class SingleEvaluator(Evaluator):

@@ -170,7 +170,7 @@ def load_para_data(params, data):
     """
     data['para'] = {}
     data['dico'] = {}
-    required_para_train = set(params.clm_steps + params.mlm_steps + params.pc_steps + params.mt_steps)
+    required_para_train = set(params.clm_steps + params.mlm_steps + params.pc_steps + params.mt_steps + params.mass_steps)
 
     for src, tgt in params.para_dataset.keys():
 

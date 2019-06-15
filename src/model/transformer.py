@@ -268,8 +268,9 @@ class TransformerModel(nn.Module):
         self.dico = dico
         self.id2lang = params.id2lang
         self.lang2id = params.lang2id
+
         if self.is_encoder:
-            assert len(self.dico) == self.n_words
+            assert len(self.dico) == self.n_words , "{} {}".format(len(self.dico),self.n_words)
         else:
             assert len(self.dico) == self.n_words
 
