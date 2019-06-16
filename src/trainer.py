@@ -458,7 +458,12 @@ class Trainer(object):
 
             if end > length + 1:
                 end = length + 1
-            pred_mask[start:end, i] = 1
+            if start != end :
+                pred_mask[start:end, i] = 1
+            else:
+                pred_mask[start, i] = 1
+
+
 
         _x_real = x[pred_mask]
         x[pred_mask] = params.mask_index

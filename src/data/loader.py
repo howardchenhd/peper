@@ -200,7 +200,7 @@ def load_para_data(params, data):
             tgt_data = load_binarized(tgt_path, params)
 
             # update dictionary parameters
-            if "{}-{}".format(src,tgt) not in params.zero_shot:
+            if "{}-{}".format(src,tgt) not in params.zero_shot or splt != 'train':
                 set_dico_parameters(params, data, src_data['dico'], 'src')
                 set_dico_parameters(params, data, tgt_data['dico'], 'tgt')
 

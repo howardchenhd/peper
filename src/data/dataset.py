@@ -244,6 +244,7 @@ class ParallelDataset(Dataset):
 
     def __init__(self, sent1, pos1, sent2, pos2, params):
 
+
         self.eos_index = params.eos_index
         self.pad_index = params.pad_index
         self.batch_size = params.batch_size
