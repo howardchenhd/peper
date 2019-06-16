@@ -181,7 +181,8 @@ def load_para_data(params, data):
         data['para'][(src, tgt)] = {}
 
         for splt in ['train', 'valid', 'test']:
-            
+
+            print(params.zero_shot)
             if "{}-{}".format(src,tgt) in params.zero_shot and splt=='train':
                 continue
 

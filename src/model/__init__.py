@@ -146,6 +146,12 @@ def build_model(params, dico):
                 enc_reload = enc_reload['model' if 'model' in enc_reload else 'encoder']
                 if all([k.startswith('module.') for k in enc_reload.keys()]):
                     enc_reload = {k[len('module.'):]: v for k, v in enc_reload.items()}
+
+                enc_reload = { k: v for k,v in enc_reload.items() if k in encoder.state_dict() }
+
+                for k, v in encoder.state_dict().items():
+                    if k not in enc_reload.items():
+                        enc_reload[k] = v
                 encoder.load_state_dict(enc_reload)
 
             # reload decoder
@@ -155,12 +161,20 @@ def build_model(params, dico):
                 dec_reload = dec_reload['model' if 'model' in dec_reload else 'decoder']
                 if all([k.startswith('module.') for k in dec_reload.keys()]):
                     dec_reload = {k[len('module.'):]: v for k, v in dec_reload.items()}
-                for i in range(params.n_layers):
+                for i in range(params.dec_layers):
                     for name in DECODER_ONLY_PARAMS:
                         if name % i not in dec_reload:
                             logger.warning("Parameter %s not found." % (name % i))
                             dec_reload[name % i] = decoder.state_dict()[name % i]
+
+                dec_reload = { k: v for k,v in dec_reload.items() if k in decoder.state_dict() }
+
+                for k, v in decoder.state_dict().items():
+                    if k not in dec_reload.items():
+                        dec_reload[k] = v
+
                 decoder.load_state_dict(dec_reload)
+
         encoder.dico = dico['src']
         decoder.dico = dico['tgt']
         

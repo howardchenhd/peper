@@ -104,7 +104,7 @@ def init_distributed_mode(params):
     # multi-GPU job (local or multi-node) - jobs started with torch.distributed.launch
     elif params.local_rank != -1:
 
-        assert params.master_port == -1
+        os.environ['MASTER_PORT'] = str(params.master_port)
 
         # read environment variables
         params.global_rank = int(os.environ['RANK'])
@@ -114,6 +114,7 @@ def init_distributed_mode(params):
         # number of nodes / node ID
         params.n_nodes = params.world_size // params.n_gpu_per_node
         params.node_id = params.global_rank // params.n_gpu_per_node
+
 
     # local job (single GPU)
     else:

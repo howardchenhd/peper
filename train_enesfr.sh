@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 export NGPU=1;
 
 CUDA_VISIBLE_DEVICES=1 python -m torch.distributed.launch --nproc_per_node=$NGPU  train.py \
