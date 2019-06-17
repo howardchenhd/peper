@@ -149,10 +149,17 @@ def build_model(params, dico):
 
                 enc_reload = { k: v for k,v in enc_reload.items() if k in encoder.state_dict() }
 
+                #
+                # for k, v in enc_reload.items():
+                #     print("加载 {}".format(k))
+                # exit()
+
                 for k, v in encoder.state_dict().items():
-                    if k not in enc_reload.items():
+                    if k not in enc_reload:
+                        logger.warning("Reassignment parameters:{}".format(k))
                         enc_reload[k] = v
                 encoder.load_state_dict(enc_reload)
+                exit()
 
             # reload decoder
             if dec_path != '':
@@ -170,7 +177,8 @@ def build_model(params, dico):
                 dec_reload = { k: v for k,v in dec_reload.items() if k in decoder.state_dict() }
 
                 for k, v in decoder.state_dict().items():
-                    if k not in dec_reload.items():
+                    if k not in dec_reload:
+                        logger.warning("Reassignment parameters:{}".format(k))
                         dec_reload[k] = v
 
                 decoder.load_state_dict(dec_reload)
