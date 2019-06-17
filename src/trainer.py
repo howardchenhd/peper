@@ -463,9 +463,6 @@ class Trainer(object):
             else:
                 pred_mask[start, i] = 1
 
-
-
-        _x_real = x[pred_mask]
         x[pred_mask] = params.mask_index
 
         assert  (x==params.eos_index).long().sum().item() == 2 * bs , x #"{} {}".format((x==params.eos_index).long().sum().item() ,2*bs)

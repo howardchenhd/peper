@@ -321,16 +321,19 @@ class Evaluator(object):
                 pred_mask[1, i] = 1
                 continue
 
-            start = random.randint(1, length)
+            start = random.randint(1,length)
             end = start + int(params.block_size * length)
 
             if end > length + 1:
                 end = length + 1
-            pred_mask[start:end, i] = 1
+            if start != end :
+                pred_mask[start:end, i] = 1
+            else:
+                pred_mask[start, i] = 1
 
-        _x_real = x[pred_mask]
         x[pred_mask] = params.mask_index
 
+        assert  (x==params.eos_index).long().sum().item() == 2 * bs , x #"{} {}".format((x==params.eos_index).long().sum().item() ,2*bs)
         return x, _x_real, pred_mask
 
 
