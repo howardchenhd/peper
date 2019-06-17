@@ -159,7 +159,6 @@ def build_model(params, dico):
                         logger.warning("Reassignment parameters:{}".format(k))
                         enc_reload[k] = v
                 encoder.load_state_dict(enc_reload)
-                exit()
 
             # reload decoder
             if dec_path != '':
