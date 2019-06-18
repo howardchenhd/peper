@@ -486,7 +486,7 @@ class EncDecEvaluator(Evaluator):
             x1, len1, langs1, x2, len2, langs2, y = to_cuda(x1, len1, langs1, x2, len2, langs2, y)
 
             if params.enc_special:
-                x1[0] = lang1_id + 6
+                x1[0] = lang2_id + 6
 
             # encode source sentence
             enc1 = encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)

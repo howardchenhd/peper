@@ -881,7 +881,7 @@ class EncDecTrainer(Trainer):
             (x1, len1), (x2, len2) = self.get_batch('mt', lang1, lang2)
 
         if params.enc_special:
-            x1[0] = lang1_id + 6
+            x1[0] = lang2_id + 6
         
         if params.dec_special:
             logger.warning("Dec_special is not implement!!!")
