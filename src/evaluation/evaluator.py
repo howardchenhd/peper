@@ -308,34 +308,61 @@ class Evaluator(object):
         scores[ppl_name] = np.exp(xe_loss / n_words) if n_words > 0 else 1e9
         scores[acc_name] = 100. * n_valid / n_words if n_words > 0 else 0.
 
+   
+    def mask_word(self, w):
+        """
+        80% time for mask, 10% time for random word, 10% time for self 
+        or
+        80% time for mask, 15% time for random word, 5% time for self ? 
+        """
+        p = np.random.random()
+        if p >= 0.2:
+            k = self.params.mask_index
+            #assert k!=1
+        elif p >= 0.05:
+            k = np.random.randint(14,self.params.n_words['src'])
+            #assert k!=1
+        else:
+            k = w
+            #assert k!=1
+        return k
+
     def mask_block(self, x, len1):
 
         params = self.params
         slen, bs = x.size()
         pred_mask = x.data.new(x.size()).fill_(0).byte()
-
+        x_ = x.clone()
+        pred_words = []
+        
         for i in range(bs):
             length = len1[i].item() - 2
+            assert length >= 1
 
-            if length == 1:
-                pred_mask[1, i] = 1
-                continue
+            start = self.random_start(length)#random.randint(1,length)
+            end = start + int(params.block_size * length) 
+            end =  length if end > length else end 
+        
+            if start == end:
+                pred_mask[start,i] = 1
+                x_[start,i] = self.mask_word(x[start,i].item())
+            for j in range(start, end):
+                pred_mask[j,i] = 1
+                x_[j,i] = self.mask_word(x[j,i].item())
 
-            start = random.randint(1,length)
-            end = start + int(params.block_size * length)
-
-            if end > length + 1:
-                end = length + 1
-            if start != end :
-                pred_mask[start:end, i] = 1
-            else:
-                pred_mask[start, i] = 1
-
-        x[pred_mask] = params.mask_index
+        _x_real = x[pred_mask] 
 
         assert  (x==params.eos_index).long().sum().item() == 2 * bs , x #"{} {}".format((x==params.eos_index).long().sum().item() ,2*bs)
-        return x, _x_real, pred_mask
-
+        return x_ , _x_real, pred_mask
+    
+    def random_start(self,length):
+        p = np.random.random()
+        if p >= 0.8:
+            return 1
+        elif p> 0.6:
+            return length
+        else:
+            return np.random.randint(1, length+1)
 
     def evaluate_mass(self, scores, data_set, lang1, lang2):
         """
@@ -394,60 +421,6 @@ class Evaluator(object):
 
 
 
-
-    # def evaluate_mass(self, scores, data_set, lang1, lang2):
-    #     """
-    #     Evaluate perplexity and next word prediction accuracy.
-    #     """
-    #     params = self.params
-    #     assert data_set in ['valid', 'test']
-    #     assert lang1 in params.langs
-    #     assert lang2 in params.langs or lang2 is None
-    #
-    #     model = self.model if params.encoder_only else self.encoder
-    #     model.eval()
-    #     model = model.module if params.multi_gpu else model
-    #
-    #     rng = np.random.RandomState(0)
-    #
-    #     lang1_id = params.lang2id[lang1]
-    #     lang2_id = params.lang2id[lang2] if lang2 is not None else None
-    #
-    #     n_words = 0
-    #     xe_loss = 0
-    #     n_valid = 0
-    #
-    #     for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None)):
-    #
-    #         # batch
-    #         if lang2 is None:
-    #             x, lengths = batch
-    #             positions = None
-    #             langs = x.clone().fill_(lang1_id) if params.n_langs > 1 else None
-    #         else:
-    #             (sent1, len1), (sent2, len2) = batch
-    #             x, lengths, positions, langs = concat_batches(sent1, len1, lang1_id, sent2, len2, lang2_id, params.pad_index, params.eos_index, reset_positions=True)
-    #
-    #         # words to predict
-    #         x, y, pred_mask = self.mask_out(x, lengths, rng)
-    #
-    #         # cuda
-    #         x, y, pred_mask, lengths, positions, langs = to_cuda(x, y, pred_mask, lengths, positions, langs)
-    #
-    #         # forward / loss
-    #         tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
-    #         word_scores, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=True)
-    #
-    #         # update stats
-    #         n_words += len(y)
-    #         xe_loss += loss.item() * len(y)
-    #         n_valid += (word_scores.max(1)[1] == y).sum().item()
-    #
-    #     # compute perplexity and prediction accuracy
-    #     ppl_name = '%s_%s_mlm_ppl' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_ppl' % (data_set, lang1, lang2)
-    #     acc_name = '%s_%s_mlm_acc' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_acc' % (data_set, lang1, lang2)
-    #     scores[ppl_name] = np.exp(xe_loss / n_words) if n_words > 0 else 1e9
-    #     scores[acc_name] = 100. * n_valid / n_words if n_words > 0 else 0.
 
 
 class SingleEvaluator(Evaluator):
@@ -513,7 +486,7 @@ class EncDecEvaluator(Evaluator):
             x1, len1, langs1, x2, len2, langs2, y = to_cuda(x1, len1, langs1, x2, len2, langs2, y)
 
             if params.enc_special:
-                x1[0] = lang1_id + 5
+                x1[0] = lang1_id + 6
 
             # encode source sentence
             enc1 = encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)

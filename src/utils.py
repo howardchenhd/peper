@@ -352,7 +352,7 @@ def concat_batches(x1, len1, lang1_id, x2, len2, lang2_id, pad_idx, eos_idx, res
             positions[l1:, i] -= len1[i]
         langs[l1:, i] = lang2_id
 
-    assert (x == eos_idx).long().sum().item() == (4 if reset_positions else 3) * bs
+    assert (x == eos_idx).long().sum().item() == (4 if reset_positions else 3) * bs , "{}".format(x)
 
     return x, lengths, positions, langs
 

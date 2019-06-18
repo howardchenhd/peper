@@ -147,19 +147,13 @@ def build_model(params, dico):
                 if all([k.startswith('module.') for k in enc_reload.keys()]):
                     enc_reload = {k[len('module.'):]: v for k, v in enc_reload.items()}
 
-                enc_reload = { k: v for k,v in enc_reload.items() if k in encoder.state_dict() }
+                # enc_reload = { k: v for k,v in enc_reload.items() if k in encoder.state_dict() }
 
-                #
-                # for k, v in enc_reload.items():
-                #     print("加载 {}".format(k))
-                # exit()
-
-                for k, v in encoder.state_dict().items():
-                    if k not in enc_reload:
-                        logger.warning("Reassignment parameters:{}".format(k))
-                        enc_reload[k] = v
+                # for k, v in encoder.state_dict().items():
+                #     if k not in enc_reload:
+                #         logger.warning("Reassignment parameters:{}".format(k))
+                #         enc_reload[k] = v
                 encoder.load_state_dict(enc_reload)
-
             # reload decoder
             if dec_path != '':
                 logger.info("Reloading decoder from %s ..." % dec_path)

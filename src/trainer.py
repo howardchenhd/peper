@@ -19,7 +19,7 @@ from .utils import get_optimizer, to_cuda, concat_batches
 from .utils import parse_lambda_config, update_lambdas
 import random
 import pdb
-
+import numpy as np
 logger = getLogger()
 
 
@@ -440,34 +440,60 @@ class Trainer(object):
         return x, lengths, positions, langs, y1, real_pred_mask
 
 
+    def mask_word(self, w):
+        """
+        80% time for mask, 10% time for random word, 10% time for self 
+        or
+        80% time for mask, 15% time for random word, 5% time for self ? 
+        """
+        p = np.random.random()
+        if p >= 0.2:
+            k = self.params.mask_index
+            #assert k!=1
+        elif p >= 0.05:
+            k = np.random.randint(14,self.params.n_words['src'])
+            #assert k!=1
+        else:
+            k = w
+            #assert k!=1
+        return k
+
     def mask_block(self, x, len1):
 
         params = self.params
         slen, bs = x.size()
         pred_mask = x.data.new(x.size()).fill_(0).byte()
-
+        x_ = x.clone()
+        pred_words = []
+        
         for i in range(bs):
             length = len1[i].item() - 2
+            assert length >= 1
 
-            if length == 1:
-                pred_mask[1, i] = 1
-                continue
+            start = self.random_start(length)#random.randint(1,length)
+            end = start + int(params.block_size * length) 
+            end =  length if end > length else end 
+        
+            if start == end:
+                pred_mask[start,i] = 1
+                x_[start,i] = self.mask_word(x[start,i].item())
+            for j in range(start, end):
+                pred_mask[j,i] = 1
+                x_[j,i] = self.mask_word(x[j,i].item())
 
-            start = random.randint(1,length)
-            end = start + int(params.block_size * length)
-
-            if end > length + 1:
-                end = length + 1
-            if start != end :
-                pred_mask[start:end, i] = 1
-            else:
-                pred_mask[start, i] = 1
-
-        x[pred_mask] = params.mask_index
+        _x_real = x[pred_mask] 
 
         assert  (x==params.eos_index).long().sum().item() == 2 * bs , x #"{} {}".format((x==params.eos_index).long().sum().item() ,2*bs)
-        return x, _x_real, pred_mask
-
+        return x_ , _x_real, pred_mask
+    
+    def random_start(self,length):
+        p = np.random.random()
+        if p >= 0.8:
+            return 1
+        elif p> 0.6:
+            return length
+        else:
+            return np.random.randint(1, length+1)
 
     def save_model(self, name):
         """
@@ -855,7 +881,7 @@ class EncDecTrainer(Trainer):
             (x1, len1), (x2, len2) = self.get_batch('mt', lang1, lang2)
 
         if params.enc_special:
-            x1[0] = lang1_id + 5
+            x1[0] = lang1_id + 6
         
         if params.dec_special:
             logger.warning("Dec_special is not implement!!!")
