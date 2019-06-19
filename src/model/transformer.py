@@ -49,8 +49,8 @@ def Embedding(num_embeddings, embedding_dim, padding_idx=None):
 
 def Linear(in_features, out_features, bias=True):
     m = nn.Linear(in_features, out_features, bias)
-    nn.init.xavier_uniform_(m.weight)
-    nn.init.constant_(m.bias, 0.)
+    # nn.init.xavier_uniform_(m.weight)
+    # nn.init.constant_(m.bias, 0.)
     return m
 
 

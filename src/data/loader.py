@@ -110,6 +110,8 @@ def load_mono_data(params, data):
     Load monolingual data.
     """
     data['mono'] = {}
+    if 'dico' not in data:
+        data['dico'] = {}
     data['mono_stream'] = {}
     for lang in params.mono_dataset.keys():
 
@@ -127,7 +129,7 @@ def load_mono_data(params, data):
 
             # load data / update dictionary parameters / update data
             mono_data = load_binarized(params.mono_dataset[lang][splt], params)
-            set_dico_parameters(params, data, mono_data['dico'])
+            set_dico_parameters(params, data, mono_data['dico'], 'src')
 
             # create stream dataset
             data['mono_stream'][lang][splt] = StreamDataset(mono_data['sentences'], mono_data['positions'], params)
@@ -169,7 +171,10 @@ def load_para_data(params, data):
     Load parallel data.
     """
     data['para'] = {}
-    data['dico'] = {}
+    
+    if 'dico' not in data:
+        data['dico'] = {}
+
     required_para_train = set(params.clm_steps + params.mlm_steps + params.pc_steps + params.mt_steps + params.mass_steps)
 
     for src, tgt in params.para_dataset.keys():
@@ -306,6 +311,11 @@ def check_data_params(params):
             for splt in ['train', 'valid', 'test']
         } for lang in params.langs if lang in required_mono
     }
+    
+    for paths in params.mono_dataset.values():
+        for p in paths.values():
+            if not os.path.isfile(p):
+                print(p)
     assert all([all([os.path.isfile(p) for p in paths.values()]) for paths in params.mono_dataset.values()])
 
     # check parallel datasets
@@ -333,7 +343,6 @@ def check_data_params(params):
 
     # check that we can evaluate on BLEU
     assert params.eval_bleu is False or len(params.mt_steps + params.bt_steps) > 0
-
     if len(params.zero_shot) > 0:
         zero_shot = sorted(params.zero_shot)
         assert len(set(zero_shot)) == len(zero_shot)

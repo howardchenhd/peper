@@ -364,13 +364,13 @@ class Trainer(object):
 
         # generate possible targets / update x input
         _x_real = x[pred_mask]
-        _x_rand = _x_real.clone().random_(params.n_words)
+        _x_rand = _x_real.clone().random_(params.n_words['src'])
         _x_mask = _x_real.clone().fill_(params.mask_index)
         probs = torch.multinomial(params.pred_probs, len(_x_real), replacement=True)
         _x = _x_mask * (probs == 0).long() + _x_real * (probs == 1).long() + _x_rand * (probs == 2).long()
         x = x.masked_scatter(pred_mask, _x)
 
-        assert 0 <= x.min() <= x.max() < params.n_words
+        assert 0 <= x.min() <= x.max() < params.n_words['src']
         assert x.size() == (slen, bs)
         assert pred_mask.size() == (slen, bs)
 

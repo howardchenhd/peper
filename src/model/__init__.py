@@ -179,15 +179,29 @@ def build_model(params, dico):
         encoder.dico = dico['src']
         decoder.dico = dico['tgt']
         
-        #freeze parameter
+
+
+        if params.fix_enc_layers != -1:
+            
+            assert params.fix_enc_layers >= 0
+            if params.fix_enc_layers == params.enc_layers:
+                params.fix_enc = True
+
+            encoder.position_embeddings.weight.requires_grad = False
+            encoder.lang_embeddings.weight.requires_grad = False
+            encoder.layer_norm_emb.weight.requires_grad = False
+            encoder.layer_norm_emb.bias.requires_grad = False
+            encoder.embeddings.weight.requires_grad = False
+
+            for layer in range(params.fix_enc_layers):
+                for name, p in encoder.named_parameters():
+                    if  '.%d.'.format(layer) in name:
+                        p.requires_grad = False
+        
         if params.fix_enc:
             for p in encoder.parameters():
                 p.requires_grad = False
-        
-        if params.fix_enc_emb:
-            #TODO
-            logger.warning("Fix Encoder Embedding is not implement!!!")
-            exit()
+
 
 
         logger.debug("Encoder: {}".format(encoder))
