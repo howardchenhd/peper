@@ -216,6 +216,7 @@ def get_parser():
     # freeze parameter
     parser.add_argument("--fix_enc",type=bool_flag, default=False)
     parser.add_argument("--fix_enc_emb",type=bool_flag, default=False)
+    parser.add_argument("--fix_enc_layers",type=int, default=-1)
 
     # multilinual NMT
     parser.add_argument("--enc_special", type=bool_flag, default=False,

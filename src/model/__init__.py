@@ -11,7 +11,7 @@ import torch
 
 from .pretrain import load_embeddings
 from .transformer import DECODER_ONLY_PARAMS, TransformerModel  # , TRANSFORMER_LAYER_PARAMS
-
+import pdb
 
 logger = getLogger()
 
@@ -195,7 +195,7 @@ def build_model(params, dico):
 
             for layer in range(params.fix_enc_layers):
                 for name, p in encoder.named_parameters():
-                    if  '.%d.'.format(layer) in name:
+                    if  '.{}.'.format(layer) in name:
                         p.requires_grad = False
         
         if params.fix_enc:
@@ -208,5 +208,4 @@ def build_model(params, dico):
         logger.debug("Decoder: {}".format(decoder))
         logger.info("Number of parameters (encoder): %i" % sum([p.numel() for p in encoder.parameters() if p.requires_grad]))
         logger.info("Number of parameters (decoder): %i" % sum([p.numel() for p in decoder.parameters() if p.requires_grad]))
-
         return encoder.cuda(), decoder.cuda()
