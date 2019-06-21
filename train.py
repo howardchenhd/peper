@@ -159,6 +159,9 @@ def get_parser():
                         help="BT coefficient")
     parser.add_argument("--lambda_mass", type=float, default=1,
                         help="MASS coefficient")
+    
+    parser.add_argument("--lambda_invar", type=float, default=1,
+                        help="invar coefficient")
 
     # training steps
     parser.add_argument("--clm_steps", type=str, default="",
@@ -173,6 +176,11 @@ def get_parser():
                         help="Back-translation steps")
     parser.add_argument("--pc_steps", type=str, default="",
                         help="Parallel classification steps")
+    parser.add_argument("--invar_steps", type=str, default="",
+                        help="invariant_steps, train encoder like tlm")
+
+    parser.add_argument("--invar_type", type=str, default="",
+                        help="choice:['cosine','selfattn','wordprob']")
 
     parser.add_argument("--mass_steps", type=str, default="",
                         help="Mask Block piecess steps")
@@ -234,7 +242,8 @@ def get_parser():
                        help= "for transfer learning, eg. en:0,ch:1")
     parser.add_argument("--enc_langnum",type=int,default=-1,
                         help="Number of lang for encoder, when default=-1, enc_langnum == n_langs")
-    
+    parser.add_argument("--real_tgtlang",type=str,default="",
+                       help= "")
     
 
     return parser
@@ -320,6 +329,12 @@ def main(params):
 
         while trainer.n_sentences < trainer.epoch_size:
 
+
+
+            #invariant steps
+            for lang1, lang2 in shuf_order(params.invar_steps, params):
+                trainer.invar_step(lang1, lang2, params.lambda_invar)
+
             # CLM steps
             for lang1, lang2 in shuf_order(params.clm_steps, params):
                 trainer.clm_step(lang1, lang2, params.lambda_clm)
@@ -345,6 +360,8 @@ def main(params):
                 if "{}-{}".format(lang1,lang2) not in params.zero_shot:
                     trainer.mt_step(lang1, lang2, params.lambda_mt)
             
+
+
             # back-translation steps
             for lang1, lang2, lang3 in shuf_order(params.bt_steps):
                 trainer.bt_step(lang1, lang2, lang3, params.lambda_bt)

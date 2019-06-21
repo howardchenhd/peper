@@ -175,7 +175,8 @@ def load_para_data(params, data):
     if 'dico' not in data:
         data['dico'] = {}
 
-    required_para_train = set(params.clm_steps + params.mlm_steps + params.pc_steps + params.mt_steps + params.mass_steps)
+    required_para_train = set(params.clm_steps + params.mlm_steps + params.pc_steps \
+                            + params.mt_steps + params.mass_steps + params.invar_steps)
 
     for src, tgt in params.para_dataset.keys():
 
@@ -187,7 +188,6 @@ def load_para_data(params, data):
 
         for splt in ['train', 'valid', 'test']:
 
-            print(params.zero_shot)
             if "{}-{}".format(src,tgt) in params.zero_shot and splt=='train':
                 continue
 
@@ -206,9 +206,17 @@ def load_para_data(params, data):
             tgt_data = load_binarized(tgt_path, params)
 
             # update dictionary parameters
-            if "{}-{}".format(src,tgt) not in params.zero_shot or splt != 'train':
-                set_dico_parameters(params, data, src_data['dico'], 'src')
-                set_dico_parameters(params, data, tgt_data['dico'], 'tgt')
+            #if "{}-{}".format(src,tgt) not in params.zero_shot and (src,tgt) not in params.invar_steps:
+            #    set_dico_parameters(params, data, src_data['dico'], 'src')
+            #    set_dico_parameters(params, data, tgt_data['dico'], 'tgt')
+            if params.real_tgtlang != "":
+                if tgt == params.real_tgtlang:
+                    set_dico_parameters(params, data, src_data['dico'], 'src')
+                    set_dico_parameters(params, data, tgt_data['dico'], 'tgt')
+                else:
+                    set_dico_parameters(params, data, src_data['dico'], 'tgt')
+                    set_dico_parameters(params, data, tgt_data['dico'], 'src')
+
 
             # create ParallelDataset
             dataset = ParallelDataset(
@@ -265,6 +273,12 @@ def check_data_params(params):
     assert all([(l1 in params.langs) and (l2 in params.langs or l2 is None) for l1, l2 in params.mlm_steps])
     assert len(params.mlm_steps) == len(set(params.mlm_steps))
     
+    # invar  steps
+    params.invar_steps = [tuple(s.split('-')) for s in params.invar_steps.split(',') if len(s) > 0]
+    assert all([len(x) == 2 for x in params.invar_steps])
+    assert all([l1 in params.langs and l2 in params.langs for l1, l2 in params.invar_steps])
+    assert all([l1 != l2 for l1, l2 in params.invar_steps])
+    assert len(params.invar_steps) == len(set(params.invar_steps))
 
     # MASS steps
     params.mass_steps = [tuple(s.split('-')) for s in params.mass_steps.split(',') if len(s) > 0]
@@ -321,7 +335,7 @@ def check_data_params(params):
     # check parallel datasets
     required_para_train = set(params.clm_steps + params.mlm_steps +\
                               params.pc_steps + params.mt_steps +\
-                              params.mass_steps)
+                              params.mass_steps + params.invar_steps)
     
     required_para = required_para_train | set([(l2, l3) for _, l2, l3 in params.bt_steps])
     params.para_dataset = {
@@ -348,6 +362,7 @@ def check_data_params(params):
         assert len(set(zero_shot)) == len(zero_shot)
         zero_shot = set([ "{}-{}".format(lang1,lang2) for lang1 in zero_shot for lang2 in zero_shot  if lang1!=lang2])
         params.zero_shot = zero_shot
+    assert params.real_tgtlang in params.langs  or  params.real_tgtlang == ""
 
 def load_data(params):
     """

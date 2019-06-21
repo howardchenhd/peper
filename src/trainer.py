@@ -14,12 +14,14 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 from torch.nn.utils import clip_grad_norm_
-
+import torch.nn as nn
 from .utils import get_optimizer, to_cuda, concat_batches
 from .utils import parse_lambda_config, update_lambdas
 import random
 import pdb
 import numpy as np
+import torch.nn.functional as F
+
 logger = getLogger()
 
 
@@ -919,6 +921,76 @@ class EncDecTrainer(Trainer):
         self.n_sentences += params.batch_size
         self.stats['processed_s'] += len2.size(0)
         self.stats['processed_w'] += (len2 - 1).sum().item()
+
+
+    def invar_step(self, lang1, lang2, lambda_coeff):
+
+        assert lambda_coeff >= 0
+        if lambda_coeff == 0:
+            return
+        params = self.params
+        self.encoder.train()
+        self.decoder.train()
+
+        assert params.invar_type in ['cosine','selfattn','wordprob']
+        lang1_id = params.lang2id[lang1]
+        lang2_id = params.lang2id[lang2]
+
+        (x1, len1), (x2, len2) = self.get_batch('mt', lang1, lang2)
+        enc1_mask, dec1_mask = (x1 == self.params.pad_index, x2 == self.params.pad_index)
+
+        langs1 = x1.clone().fill_(lang1_id)
+        langs2 = x2.clone().fill_(lang2_id)
+
+
+        # cuda
+        x1, len1, langs1, x2, len2, langs2, enc1_mask, dec1_mask= to_cuda(x1, len1, langs1, x2, len2, langs2, enc1_mask, dec1_mask)
+
+
+        # encode source sentence
+        enc1 = self.encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False) #  sqlen bsz dim
+        enc1 = enc1.transpose(0,1) # bsz sqlen dim
+
+        # encode target sentence
+        dec1 = self.encoder('fwd', x=x2, lengths=len2, langs=langs2, causal=False)
+        dec1 = dec1.transpose(0,1)
+        
+        if params.invar_type == 'selfattn':
+           
+            bos_batch = x1.new_full((x1.size(1),1), params.eos_index)
+            bos_embedding = self.decoder.embeddings(bos_batch) # bsz x 1 x dim
+            enc1_ctx =  self.get_attention(enc1, bos_embedding, enc1_mask)
+            dec1_ctx =  self.get_attention(dec1, bos_embedding, dec1_mask)
+            cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+            loss = 1 - cos(enc1_ctx, dec1_ctx).mean()
+            loss = loss * lambda_coeff
+        
+        elif params.invar_type == 'cosine':
+            pass
+        else:
+            pass
+
+        # optimize
+        if self.params.fix_enc:
+            self.optimize(loss, ['decoder'])
+        else:
+            self.optimize(loss, ['encoder','decoder'])
+        # number of processed sentences / words
+        self.n_sentences += params.batch_size
+        self.stats['processed_s'] += len2.size(0)
+        self.stats['processed_w'] += (len2 - 1).sum().item()
+    
+    def get_attention(self,query ,k ,mask):
+        """
+        q,k : bsz x sqlen x dim,
+        mask: bsz x sqlen
+        """
+        scores = torch.matmul(query, k.transpose(1,2)).squeeze(-1)                 # bs x sqlen
+        scores.masked_fill_(mask.t(),-float('inf'))                                # bs x sqlen
+        scores = F.softmax(scores, dim=-1).unsqueeze(-1).expand_as(query)          # bs x sqlen
+        cxt = (scores * query).sum(1)                                              # bs x dim
+        return cxt
+
 
     def bt_step(self, lang1, lang2, lang3, lambda_coeff):
         """
