@@ -89,7 +89,8 @@ class Trainer(object):
             [('AE-%s' % lang, []) for lang in params.ae_steps] +
             [('MT-%s-%s' % (l1, l2), []) for l1, l2 in params.mt_steps] +
             [('BT-%s-%s-%s' % (l1, l2, l3), []) for l1, l2, l3 in params.bt_steps] +
-            [('MA-%s-%s' % (l1, l2), []) for l1, l2 in params.mass_steps]
+            [('MA-%s-%s' % (l1, l2), []) for l1, l2 in params.mass_steps] +
+            [('INVAR-%s-%s' % (l1, l2), []) for l1, l2 in params.invar_steps]
 
         )
         self.last_time = time.time()
@@ -902,7 +903,7 @@ class EncDecTrainer(Trainer):
 
         # encode source sentence
         enc1 = self.encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)
-        enc1 = enc1.transpose(0, 1)
+        enc1 = [enc.transpose(0, 1) for enc in enc1]#enc1.transpose(0, 1)
 
         # decode target sentence
         dec2 = self.decoder('fwd', x=x2, lengths=len2, langs=langs2, causal=True, src_enc=enc1, src_len=len1)
@@ -911,7 +912,7 @@ class EncDecTrainer(Trainer):
         _, loss = self.decoder('predict', tensor=dec2, pred_mask=pred_mask, y=y, get_scores=False)
         self.stats[('AE-%s' % lang1) if lang1 == lang2 else ('MT-%s-%s' % (lang1, lang2))].append(loss.item())
         loss = lambda_coeff * loss
-
+        
         # optimize
         if self.params.fix_enc:
             self.optimize(loss, ['decoder'])
@@ -941,34 +942,109 @@ class EncDecTrainer(Trainer):
 
         langs1 = x1.clone().fill_(lang1_id)
         langs2 = x2.clone().fill_(lang2_id)
-
+        tgt_id = params.lang2id[params.real_tgtlang]
 
         # cuda
         x1, len1, langs1, x2, len2, langs2, enc1_mask, dec1_mask= to_cuda(x1, len1, langs1, x2, len2, langs2, enc1_mask, dec1_mask)
 
 
-        # encode source sentence
+        with torch.no_grad():
+            self.encoder.eval()
+            self.decoder.eval()
+            # encode source sentence
+            enc1 = self.encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False) #  sqlen bsz dim
+            enc1 = enc1.transpose(0,1) # bsz sqlen dim
+            t1, len1_t = self.decoder.generate(enc1, len1, tgt_id, max_len=int(1.3 * len1.max().item() + 5))
+            # encode target sentence
+            enc2 = self.encoder('fwd', x=x2, lengths=len2, langs=langs2, causal=False)
+            enc2 = enc2.transpose(0,1)
+            t2, len2_t = self.decoder.generate(enc2, len2, tgt_id, max_len=int(1.3 * len1.max().item() + 5))
+
+            # target words to predict
+            alen1 = torch.arange(len1_t.max(), dtype=torch.long, device=len2.device)
+            pred_mask1 = alen1[:, None] < len1_t[None] - 1  # do not predict anything given the last target word
+            y1 = t1[1:].masked_select(pred_mask1[:-1])
+            assert len(y1) == (len1_t - 1).sum().item()
+
+            alen2 = torch.arange(len2_t.max(), dtype=torch.long, device=len2.device)
+            pred_mask2 = alen2[:, None] < len2_t[None] - 1  # do not predict anything given the last target word (sqlen x bsz)
+            y2 = t2[1:].masked_select(pred_mask2[:-1])
+            assert len(y2) == (len2_t - 1).sum().item()
+
+            tgt1_id = t1.clone().fill_(tgt_id)
+            tgt2_id = t2.clone().fill_(tgt_id)
+
+
+        self.encoder.train()
+        self.decoder.train()
         enc1 = self.encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False) #  sqlen bsz dim
         enc1 = enc1.transpose(0,1) # bsz sqlen dim
+        enc2 = self.encoder('fwd', x=x2, lengths=len2, langs=langs2, causal=False)
+        enc2 = enc2.transpose(0,1)
 
-        # encode target sentence
-        dec1 = self.encoder('fwd', x=x2, lengths=len2, langs=langs2, causal=False)
-        dec1 = dec1.transpose(0,1)
-        
-        if params.invar_type == 'selfattn':
+
+        dec1 = self.decoder('fwd', x=t2, lengths=len2_t, langs=tgt2_id, causal=True, src_enc=enc1, src_len=len1)
+        _, loss1 = self.decoder('predict', tensor=dec1, pred_mask=pred_mask2, y=y2, get_scores=False, mean = False)
+        loss1 = pred_mask2.clone().float().masked_scatter(pred_mask2, loss1).t().mean(-1)  # bsz x 1
+
+        dec2 = self.decoder('fwd', x=t1, lengths=len1_t, langs=tgt1_id, causal=True, src_enc=enc2, src_len=len2)
+        _, loss2 = self.decoder('predict', tensor=dec2, pred_mask=pred_mask1, y=y1, get_scores=False, mean = False)
+        loss2 = pred_mask1.clone().float().masked_scatter(pred_mask1, loss2).t().mean(-1) 
+
+
+        with torch.no_grad():
+            enc1_ = enc1.clone().fill_(0.)
+            dec1 = self.decoder('fwd', x=t2, lengths=len2_t, langs=tgt2_id, causal=True, src_enc=enc1_, src_len=len1)
+            _, w1 = self.decoder('predict', tensor=dec1, pred_mask=pred_mask2, y=y2, get_scores=False, mean = False)
+            w1 = (-pred_mask2.clone().float().masked_scatter(pred_mask2, w1).sum(dim=0) / len2_t.float()).exp() 
+
+            enc2_ = enc2.clone().fill_(0.)
+            dec2 = self.decoder('fwd', x=t1, lengths=len1_t, langs=tgt1_id, causal=True, src_enc=enc2_, src_len=len2)
+            _, w2 = self.decoder('predict', tensor=dec2, pred_mask=pred_mask1, y=y1, get_scores=False, mean = False)
+            w2 = (-pred_mask1.clone().float().masked_scatter(pred_mask1, w2).sum(dim=0) / len1_t.float()).exp()
+            ww = torch.softmax( torch.cat([w1.unsqueeze(-1),w2.unsqueeze(-1)],dim=-1),dim=-1)
+
+        loss =   0.1 * ( (loss1 * ww[:,0]).mean() + (loss2 * ww[:,1]).mean() )
+    
+
+        # # encode source sentence
+        # enc1 = self.encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False) #  sqlen bsz dim
+        # enc1 = enc1.transpose(0,1) # bsz sqlen dim
+
+        # # encode target sentence
+        # dec1 = self.encoder('fwd', x=x2, lengths=len2, langs=langs2, causal=False)
+        # dec1 = dec1.transpose(0,1)
+
+        # if params.invar_type == 'selfattn':
            
-            bos_batch = x1.new_full((x1.size(1),1), params.eos_index)
-            bos_embedding = self.decoder.embeddings(bos_batch) # bsz x 1 x dim
-            enc1_ctx =  self.get_attention(enc1, bos_embedding, enc1_mask)
-            dec1_ctx =  self.get_attention(dec1, bos_embedding, dec1_mask)
-            cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-            loss = 1 - cos(enc1_ctx, dec1_ctx).mean()
-            loss = loss * lambda_coeff
+        #     bos_batch = x1.new_full((x1.size(1),1), params.eos_index)
+        #     bos_embedding = self.decoder.embeddings(bos_batch) # bsz x 1 x dim
+        #     enc1_ctx =  self.get_attention(enc1, bos_embedding, enc1_mask)
+        #     dec1_ctx =  self.get_attention(dec1, bos_embedding, dec1_mask)
+        #     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+        #     loss = 1 - cos(enc1_ctx, dec1_ctx).mean()
+        #     loss = loss * lambda_coeff
         
-        elif params.invar_type == 'cosine':
-            pass
-        else:
-            pass
+        # elif params.invar_type == 'cosine':
+        #     enc1_max_pooling = enc1.max(dim=1)[0]
+        #     dec1_max_polling = dec1.max(dim=1)[0]
+        #     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+        #     loss = 1 - cos(enc1_max_pooling ,dec1_max_polling).mean()
+        #     loss = loss * lambda_coeff
+            
+        # else :
+        #     bos_batch = x1.new_full((x1.size(1),1), params.eos_index)
+        #     bos_embedding = self.decoder.embeddings(bos_batch) # bsz x 1 x dim
+        #     enc1_ctx =  self.decoder()
+        #     dec1_ctx =  self.get_attention(dec1, bos_embedding, dec1_mask)
+        #     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+        #     loss = 1 - cos(enc1_ctx, dec1_ctx).mean()
+        #     loss = loss * lambda_coeff
+
+
+
+
+        self.stats[ ('INVAR-%s-%s' % (lang1, lang2))].append(loss.item())
 
         # optimize
         if self.params.fix_enc:

@@ -182,7 +182,6 @@ def build_model(params, dico):
 
 
         if params.fix_enc_layers != -1:
-            
             assert params.fix_enc_layers >= 0
             if params.fix_enc_layers == params.enc_layers:
                 params.fix_enc = True
@@ -197,7 +196,7 @@ def build_model(params, dico):
                 for name, p in encoder.named_parameters():
                     if  '.{}.'.format(layer) in name:
                         p.requires_grad = False
-        
+
         if params.fix_enc:
             for p in encoder.parameters():
                 p.requires_grad = False

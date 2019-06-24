@@ -242,7 +242,7 @@ class Evaluator(object):
             # forward / loss
             tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=True)
             word_scores, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=True)
-
+            
             # update stats
             n_words += y.size(0)
             xe_loss += loss.item() * len(y)
@@ -490,7 +490,7 @@ class EncDecEvaluator(Evaluator):
 
             # encode source sentence
             enc1 = encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)
-            enc1 = enc1.transpose(0, 1)
+            enc1 = [enc.transpose(0, 1) for enc in enc1]#enc1.transpose(0, 1)
 
             # decode target sentence
             dec2 = decoder('fwd', x=x2, lengths=len2, langs=langs2, causal=True, src_enc=enc1, src_len=len1)

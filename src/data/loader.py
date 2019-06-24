@@ -188,7 +188,7 @@ def load_para_data(params, data):
 
         for splt in ['train', 'valid', 'test']:
 
-            if "{}-{}".format(src,tgt) in params.zero_shot and splt=='train':
+            if "{}-{}".format(src,tgt) in params.zero_shot and (splt=='train' and (src,tgt) not in params.invar_steps):
                 continue
 
             # no need to load training data for evaluation
@@ -206,17 +206,16 @@ def load_para_data(params, data):
             tgt_data = load_binarized(tgt_path, params)
 
             # update dictionary parameters
-            #if "{}-{}".format(src,tgt) not in params.zero_shot and (src,tgt) not in params.invar_steps:
-            #    set_dico_parameters(params, data, src_data['dico'], 'src')
-            #    set_dico_parameters(params, data, tgt_data['dico'], 'tgt')
-            if params.real_tgtlang != "":
+            if params.real_tgtlang != "" and (src,tgt) not in params.invar_steps:
                 if tgt == params.real_tgtlang:
                     set_dico_parameters(params, data, src_data['dico'], 'src')
                     set_dico_parameters(params, data, tgt_data['dico'], 'tgt')
                 else:
                     set_dico_parameters(params, data, src_data['dico'], 'tgt')
                     set_dico_parameters(params, data, tgt_data['dico'], 'src')
-
+            elif (src,tgt) in params.invar_steps:
+                set_dico_parameters(params, data, src_data['dico'], 'src')
+                set_dico_parameters(params, data, src_data['dico'], 'src')
 
             # create ParallelDataset
             dataset = ParallelDataset(
@@ -243,7 +242,8 @@ def load_para_data(params, data):
 
             data['para'][(src, tgt)][splt] = dataset
             logger.info("")
-
+    
+    logger.info("vocab size：src:{} tgt:{}".format(len(data['dico']['src']), len(data['dico']['tgt'])))
     logger.info("")
 
 

@@ -12,7 +12,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import pdb
 
 N_MAX_POSITIONS = 512  # maximum input sequence length
 
@@ -123,7 +123,7 @@ class PredLayer(nn.Module):
                 head_bias=True,  # default is False
             )
 
-    def forward(self, x, y, get_scores=False):
+    def forward(self, x, y, get_scores=False,mean=True):
         """
         Compute the loss, and optionally the scores.
         """
@@ -131,7 +131,10 @@ class PredLayer(nn.Module):
 
         if self.asm is False:
             scores = self.proj(x).view(-1, self.n_words)
-            loss = F.cross_entropy(scores, y, reduction='elementwise_mean')
+            if mean:
+                loss = F.cross_entropy(scores, y, reduction='elementwise_mean')
+            else:
+                loss = F.cross_entropy(scores, y, reduction ='none')
         else:
             _, loss = self.proj(x, y)
             scores = self.proj.log_prob(x) if get_scores else None
@@ -260,6 +263,8 @@ class TransformerModel(nn.Module):
 
         self.norm_emb = params.norm_emb
         self.lang_emb = params.lang_emb    
+        self.low_level_info = params.low_level_info
+        self.low_layer = params.low_layer
 
         # dictionary / languages
         self.n_langs = params.enc_langnum if params.enc_langnum != -1 else params.n_langs
@@ -302,12 +307,23 @@ class TransformerModel(nn.Module):
             self.layer_norm15 = nn.ModuleList()
             self.encoder_attn = nn.ModuleList()
 
-        for _ in range(self.n_layers):
+            if self.low_level_info:
+                self.layer_norm18 = nn.ModuleList()
+                self.encoder_attn18 = nn.ModuleList()
+
+
+        for i in range(self.n_layers):
             self.attentions.append(MultiHeadAttention(self.n_heads, self.dim, dropout=self.attention_dropout))
             self.layer_norm1.append(nn.LayerNorm(self.dim, eps=1e-12))
-            if self.is_decoder:
+            
+            if self.is_decoder :
                 self.layer_norm15.append(nn.LayerNorm(self.dim, eps=1e-12))
                 self.encoder_attn.append(MultiHeadAttention(self.n_heads, self.dim, dropout=self.attention_dropout))
+
+                if self.low_level_info and i < self.low_layer:
+                    self.layer_norm18.append(nn.LayerNorm(self.dim, eps=1e-12))
+                    self.encoder_attn18.append(MultiHeadAttention(self.n_heads, self.dim, dropout=self.attention_dropout))
+
             self.ffns.append(TransformerFFN(self.dim, self.hidden_dim, self.dim, dropout=self.dropout, gelu_activation=params.gelu_activation))
             self.layer_norm2.append(nn.LayerNorm(self.dim, eps=1e-12))
 
@@ -349,7 +365,7 @@ class TransformerModel(nn.Module):
         assert (src_enc is None) == (src_len is None)
         if src_enc is not None:
             assert self.is_decoder
-            assert src_enc.size(0) == bs
+            assert src_enc[-1].size(0) == bs
 
         # generate masks
         mask, attn_mask = get_masks(slen, lengths, causal)
@@ -391,7 +407,8 @@ class TransformerModel(nn.Module):
         
         tensor = F.dropout(tensor, p=self.dropout, training=self.training)
         tensor *= mask.unsqueeze(-1).to(tensor.dtype)
-
+        
+        all_layer_info = []
         # transformer layers
         for i in range(self.n_layers):
 
@@ -403,15 +420,26 @@ class TransformerModel(nn.Module):
 
             # encoder attention (for decoder only)
             if self.is_decoder and src_enc is not None:
-                attn = self.encoder_attn[i](tensor, src_mask, kv=src_enc, cache=cache)
+
+                if self.low_level_info and i < self.low_layer:
+                    low_src_enc = src_enc[i]
+                    attn = self.encoder_attn18[i](tensor, src_mask, kv=low_src_enc, cache=cache)
+                    attn = F.dropout(attn, p=self.dropout, training=self.training)
+                    tensor = tensor + attn
+                    tensor = self.layer_norm18[i](tensor)
+
+                attn = self.encoder_attn[i](tensor, src_mask, kv=src_enc[-1], cache=cache)
                 attn = F.dropout(attn, p=self.dropout, training=self.training)
                 tensor = tensor + attn
                 tensor = self.layer_norm15[i](tensor)
+
 
             # FFN
             tensor = tensor + self.ffns[i](tensor)
             tensor = self.layer_norm2[i](tensor)
             tensor *= mask.unsqueeze(-1).to(tensor.dtype)
+
+            all_layer_info.append(tensor.transpose(0,1)) # sqlen bsz
 
         # update cache length
         if cache is not None:
@@ -419,10 +447,12 @@ class TransformerModel(nn.Module):
 
         # move back sequence length to dimension 0
         tensor = tensor.transpose(0, 1)
-
+        
+        if self.is_encoder:
+            return  all_layer_info
         return tensor
 
-    def predict(self, tensor, pred_mask, y, get_scores):
+    def predict(self, tensor, pred_mask, y, get_scores, mean=True):
         """
         Given the last hidden state, compute word scores and/or the loss.
             `pred_mask` is a ByteTensor of shape (slen, bs), filled with 1 when
@@ -431,7 +461,7 @@ class TransformerModel(nn.Module):
             `get_scores` is a boolean specifying whether we need to return scores
         """
         masked_tensor = tensor[pred_mask.unsqueeze(-1).expand_as(tensor)].view(-1, self.dim)
-        scores, loss = self.pred_layer(masked_tensor, y, get_scores)
+        scores, loss = self.pred_layer(masked_tensor, y, get_scores, mean=mean)
         return scores, loss
 
     def generate(self, src_enc, src_len, tgt_lang_id, max_len=200, sample_temperature=None):
@@ -454,7 +484,7 @@ class TransformerModel(nn.Module):
 
         # input batch
         bs = len(src_len)
-        assert src_enc.size(0) == bs
+        assert src_enc[-1].size(0) == bs
 
         # generated sentences
         generated = src_len.new(max_len, bs)  # upcoming output
@@ -540,7 +570,7 @@ class TransformerModel(nn.Module):
         """
 
         # check inputs
-        assert src_enc.size(0) == src_len.size(0)
+        assert src_enc[-1].size(0) == src_len.size(0)
         assert beam_size >= 1
 
         # batch size / number of words
@@ -548,7 +578,8 @@ class TransformerModel(nn.Module):
         n_words = self.n_words
 
         # expand to beam size the source latent representations / source lengths
-        src_enc = src_enc.unsqueeze(1).expand((bs, beam_size) + src_enc.shape[1:]).contiguous().view((bs * beam_size,) + src_enc.shape[1:])
+        #src_enc = src_enc.unsqueeze(1).expand((bs, beam_size) + src_enc.shape[1:]).contiguous().view((bs * beam_size,) + src_enc.shape[1:])
+        src_enc = [ enc.unsqueeze(1).expand((bs, beam_size) + enc.shape[1:]).contiguous().view((bs * beam_size,) + enc.shape[1:]) for enc in src_enc]
         src_len = src_len.unsqueeze(1).expand(bs, beam_size).contiguous().view(-1)
 
         # generated sentences (batch with beam current hypotheses)
@@ -567,7 +598,7 @@ class TransformerModel(nn.Module):
         langs = positions.clone().fill_(tgt_lang_id)
 
         # scores for each sentence in the beam
-        beam_scores = src_enc.new(bs, beam_size).fill_(0)
+        beam_scores = src_enc[-1].new(bs, beam_size).fill_(0)
         beam_scores[:, 1:] = -1e9
         beam_scores = beam_scores.view(-1)
 
