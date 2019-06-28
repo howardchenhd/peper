@@ -14,7 +14,7 @@ import torch
 
 from ..utils import to_cuda, restore_segmentation, concat_batches
 import random
-
+import torch.nn as nn
 BLEU_SCRIPT_PATH = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'multi-bleu.perl')
 assert os.path.isfile(BLEU_SCRIPT_PATH)
 
@@ -259,6 +259,7 @@ class Evaluator(object):
         Evaluate perplexity and next word prediction accuracy.
         """
         params = self.params
+        print(data_set)
         assert data_set in ['valid', 'test']
         assert lang1 in params.langs
         assert lang2 in params.langs or lang2 is None
@@ -276,6 +277,8 @@ class Evaluator(object):
         xe_loss = 0
         n_valid = 0
 
+        n_translates = 0
+        cosine = [[] for _ in range(model.n_layers)]
         for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None)):
 
             # batch
@@ -295,12 +298,34 @@ class Evaluator(object):
 
             # forward / loss
             tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
-            word_scores, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=True)
+            word_scores, loss = model('predict', tensor=tensor[-1], pred_mask=pred_mask, y=y, get_scores=True)
 
             # update stats
             n_words += len(y)
             xe_loss += loss.item() * len(y)
             n_valid += (word_scores.max(1)[1] == y).sum().item()
+
+            if lang2:
+                n_translates +=  sent1.size(1)
+                langs1 = sent1.clone().fill_(lang1_id)
+                langs2 = sent2.clone().fill_(lang2_id)
+
+                sent1, sent2, len1 , len2, langs1, langs2 = to_cuda(sent1, sent2, len1 , len2, langs1, langs2)
+                tensor1 = model('fwd', x=sent1, lengths=len1, positions=None, langs=langs1, causal=False)
+                tensor2 = model('fwd', x=sent2, lengths=len2, positions=None, langs=langs2, causal=False)
+
+                for layer in range(model.n_layers):
+                    f1 = tensor1[layer][0]     # bsz x dim
+                    f2 = tensor2[layer][0]
+                    assert f1.size(0) == sent1.size(1) ,"{} {}".format(f1.size(),sent1.size())
+                    cos = nn.CosineSimilarity()
+                    distance = cos(f1, f2).sum().item()
+                    cosine[layer].append(distance)
+
+        print("共测试 {}句".format(n_translates))
+        for i in range(model.n_layers):
+            cosine[i] = sum(cosine[i]) / n_translates
+            print("第{}层 cosine 值为{}".format(i+1, cosine[i]))
 
         # compute perplexity and prediction accuracy
         ppl_name = '%s_%s_mlm_ppl' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_ppl' % (data_set, lang1, lang2)

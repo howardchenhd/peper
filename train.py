@@ -245,6 +245,9 @@ def get_parser():
     parser.add_argument("--real_tgtlang",type=str,default="",
                        help= "")
     
+    parser.add_argument("--low_level_info",type=bool_flag,default=False)
+    parser.add_argument("--low_layer",type=int,default=-1)
+
 
     return parser
 
