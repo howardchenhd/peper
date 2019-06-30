@@ -104,7 +104,12 @@ def build_model(params, dico):
         # reload a pretrained model
         if params.reload_model != '':
             logger.info("Reloading model from %s ..." % params.reload_model)
-            reloaded = torch.load(params.reload_model, map_location=lambda storage, loc: storage.cuda(params.local_rank))['model']
+            reloaded = torch.load(params.reload_model, map_location=lambda storage, loc: storage.cuda(params.local_rank))
+            if 'encoder' in reloaded:
+                reloaded = reloaded['encoder']
+            else:
+                reloaded = reloaded['model']
+
             if all([k.startswith('module.') for k in reloaded.keys()]):
                 reloaded = {k[len('module.'):]: v for k, v in reloaded.items()}
 

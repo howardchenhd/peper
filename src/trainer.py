@@ -21,7 +21,7 @@ import random
 import pdb
 import numpy as np
 import torch.nn.functional as F
-
+from .model.discriminator import Discriminator
 logger = getLogger()
 
 
@@ -101,11 +101,16 @@ class Trainer(object):
         # initialize lambda coefficients and their configurations
         parse_lambda_config(params)
 
+    def bulid_discriminator(self, params):
+
+        self.optimizers['dis'] = self.get_optimizer_fp('dis')
+        self.dis = Discriminator(params)
+
     def get_optimizer_fp(self, module):
         """
         Build optimizer.
         """
-        assert module in ['model', 'encoder', 'decoder']
+        assert module in ['model', 'encoder', 'decoder', 'dis']
         optimizer = get_optimizer(getattr(self, module).parameters(), self.params.optimizer)
         if self.params.fp16:
             from apex.fp16_utils import FP16_Optimizer
@@ -857,10 +862,11 @@ class EncDecTrainer(Trainer):
             'encoder': self.get_optimizer_fp('encoder'),
             'decoder': self.get_optimizer_fp('decoder'),
         }
+        
 
         super().__init__(data, params)
 
-    def mt_step(self, lang1, lang2, lambda_coeff):
+    def mt_step(self, lang1, lang2, lambda_coeff, backward=True):
         """
         Machine translation step.
         Can also be used for denoising auto-encoding.
@@ -913,19 +919,20 @@ class EncDecTrainer(Trainer):
         self.stats[('AE-%s' % lang1) if lang1 == lang2 else ('MT-%s-%s' % (lang1, lang2))].append(loss.item())
         loss = lambda_coeff * loss
         
-        # optimize
-        if self.params.fix_enc:
-            self.optimize(loss, ['decoder'])
-            print("固定住encoder")
-        else:
-            self.optimize(loss, ['encoder','decoder'])
-        # number of processed sentences / words
+        if backward:
+            # optimize
+            if self.params.fix_enc:
+                self.optimize(loss, ['decoder'])
+            else:
+                self.optimize(loss, ['encoder','decoder'])
+            # number of processed sentences / words
+            
         self.n_sentences += params.batch_size
         self.stats['processed_s'] += len2.size(0)
         self.stats['processed_w'] += (len2 - 1).sum().item()
+        return loss
 
-
-    def invar_step(self, lang1, lang2, lambda_coeff):
+    def invar_step(self, lang1, lang2, lambda_coeff, backward=True, loss_= 0):
 
         assert lambda_coeff >= 0
         if lambda_coeff == 0:
@@ -939,59 +946,86 @@ class EncDecTrainer(Trainer):
         lang2_id = params.lang2id[lang2]
 
         (x1, len1), (x2, len2) = self.get_batch('mt', lang1, lang2)
-        enc1_mask, dec1_mask = (x1 == self.params.pad_index, x2 == self.params.pad_index)
+        enc1_mask, enc2_mask = (x1 == self.params.pad_index, x2 == self.params.pad_index)
 
         langs1 = x1.clone().fill_(lang1_id)
         langs2 = x2.clone().fill_(lang2_id)
         tgt_id = params.lang2id[params.real_tgtlang]
 
         # cuda
-        x1, len1, langs1, x2, len2, langs2, enc1_mask, dec1_mask= to_cuda(x1, len1, langs1, x2, len2, langs2, enc1_mask, dec1_mask)
+        x1, len1, langs1, x2, len2, langs2, enc1_mask, enc2_mask= to_cuda(x1, len1, langs1, x2, len2, langs2, enc1_mask, enc2_mask)
 
 
         # encode source sentence
         enc1 = self.encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False) #  sqlen bsz dim
-        enc1 = [enc.transpose(0, 1) for enc in enc1] 
+        enc1 = [enc.transpose(0, 1) for enc in enc1]  # bsz sqlen dim
 
         # encode target sentence
-        dec1 = self.encoder('fwd', x=x2, lengths=len2, langs=langs2, causal=False)
-        dec1 = [dec.transpose(0, 1) for dec in dec1] 
+        enc2 = self.encoder('fwd', x=x2, lengths=len2, langs=langs2, causal=False)
+        enc2 = [dec.transpose(0, 1) for dec in enc2] 
 
         if params.invar_type == 'selfattn':
-           
             bos_batch = x1.new_full((x1.size(1),1), params.eos_index)
-            bos_embedding = self.decoder.embeddings(bos_batch) # bsz x 1 x dim
+            langid = x1.new_full((x1.size(1),1),tgt_id)
+            bos_embedding = self.decoder.embeddings(bos_batch) + self.decoder.lang_embeddings(langid)# bsz x 1 x dim
+            bos_embedding = bos_embedding.detach()
             loss =0 
-            for layer in range(self.encoder.n_layers):
-                enc1_ctx =  self.get_attention(enc1[layer], bos_embedding, enc1_mask)
-                dec1_ctx =  self.get_attention(dec1[layer], bos_embedding, dec1_mask)
-                cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-                loss += 1 - cos(enc1_ctx, dec1_ctx).mean()
+            
+            enc1_ctx =  self.get_attention(enc1[-1], bos_embedding, enc1_mask)
+            enc2_ctx =  self.get_attention(enc2[-1], bos_embedding, enc2_mask)
+            
+            cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+            loss += (1 - cos(enc1_ctx, enc2_ctx)).mean()
             loss = loss * lambda_coeff
-            loss = loss / self.encoder.n_layers
+
+
 
         elif params.invar_type == 'cosine':
-            enc1_max_pooling = enc1.max(dim=1)[0]
-            dec1_max_polling = dec1.max(dim=1)[0]
-            cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-            loss = 1 - cos(enc1_max_pooling ,dec1_max_polling).mean()
-            loss = loss * lambda_coeff
-            
+            loss = 0
+            for layer in range(self.encoder.n_layers):
+                enc1_max_pooling = enc1[layer].max(dim=1)[0] # bsz x dim 
+                enc2_max_polling = enc2[layer].max(dim=1)[0]
+                cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+                loss_layer = (1 - cos(enc1_max_pooling , enc2_max_polling)).mean()
+                loss += loss_layer
         else :
-            pass
+            bos_batch1 = x1.new_full((x1.size(1),1), params.eos_index)
+            bos_batch2 = x1.new_full((x1.size(1),1), params.eos_index)
+            langid1 = x1.new_full((x1.size(1),1),tgt_id).t()
+            langid2 = x1.new_full((x1.size(1),1),tgt_id).t()
+
+            loss =0 
+
+            with torch.no_grad():
+                length1 = x1.new_full((x1.size(1),),1)
+                length2 = length1.clone().contiguous() #x2.new_full((x1.size(1),),1)
+                enc1_ctx = self.decoder('fwd', x=bos_batch1.t(), lengths=length1, langs=langid1, causal=True, src_enc=enc1, src_len=len1)
+                enc2_ctx = self.decoder('fwd', x=bos_batch2.t(), lengths=length2, langs=langid2, causal=True, src_enc=enc2, src_len=len2)
+
+                assert enc1_ctx.size(1) == x1.size(1) and enc1_ctx.size(0) == 1 and enc2_ctx.size(0) == 1
+                enc1_ctx, enc2_ctx = enc1_ctx.transpose(0,1), enc2_ctx.transpose(0,1) # bsz sqlen dim
+
+            cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+            loss += (1 - cos(enc1_ctx, enc2_ctx)).mean()
+            loss = loss * lambda_coeff
 
         self.stats[ ('INVAR-%s-%s' % (lang1, lang2))].append(loss.item())
 
-        # optimize
-        if self.params.fix_enc:
-            self.optimize(loss, ['decoder'])
-        else:
-            self.optimize(loss, ['encoder','decoder'])
+        loss = loss + loss_
+
+        if backward:
+            # # optimize
+            if self.params.fix_enc:
+                self.optimize(loss, ['decoder'])
+            else:
+                self.optimize(loss, ['encoder','decoder'])
         # number of processed sentences / words
         self.n_sentences += params.batch_size
         self.stats['processed_s'] += len2.size(0)
         self.stats['processed_w'] += (len2 - 1).sum().item()
-    
+        return loss
+
+
     def get_attention(self,query ,k ,mask):
         """
         q,k : bsz x sqlen x dim,
@@ -1060,6 +1094,8 @@ class EncDecTrainer(Trainer):
 
         # loss
         _, loss = self.decoder('predict', tensor=dec3, pred_mask=pred_mask, y=y1, get_scores=False)
+
+        
         self.stats[('BT-%s-%s-%s' % (lang1, lang2, lang3))].append(loss.item())
 
         # optimize

@@ -332,12 +332,13 @@ def main(params):
 
         while trainer.n_sentences < trainer.epoch_size:
 
-
-
-            #invariant steps
-            for lang1, lang2 in shuf_order(params.invar_steps, params):
-                trainer.invar_step(lang1, lang2, params.lambda_invar)
-
+            # mt_steps = [(lang1,lang2) for lang1,lang2 in params.mt_steps if "{}-{}".format(lang1,lang2)  not in params.zero_shot]
+            # #invariant steps
+            # for (lang1, lang2), (lang3,lang4) in zip(shuf_order(params.invar_steps, params),shuf_order(mt_steps, params)):
+            #     print(lang3, lang4)
+            #     loss1 = trainer.mt_step(lang3, lang4, params.lambda_mt, backward=True)
+            #     #trainer.invar_step(lang1, lang2, params.lambda_invar, backward=True, loss_=loss1)
+            #     #trainer.invar_step(lang1, lang2, params.lambda_invar, backward=True)
             # CLM steps
             for lang1, lang2 in shuf_order(params.clm_steps, params):
                 trainer.clm_step(lang1, lang2, params.lambda_clm)
@@ -358,12 +359,12 @@ def main(params):
             for lang in shuf_order(params.ae_steps):
                 trainer.mt_step(lang, lang, params.lambda_ae)
 
-            # machine translation steps
-            for lang1, lang2 in shuf_order(params.mt_steps, params):
-                if "{}-{}".format(lang1,lang2) not in params.zero_shot:
-                    trainer.mt_step(lang1, lang2, params.lambda_mt)
+            if  params.invar_steps:
+                # machine translation steps
+                for lang1, lang2 in shuf_order(params.mt_steps, params):
+                    if "{}-{}".format(lang1,lang2) not in params.zero_shot:
+                        trainer.mt_step(lang1, lang2, params.lambda_mt)
             
-
 
             # back-translation steps
             for lang1, lang2, lang3 in shuf_order(params.bt_steps):
