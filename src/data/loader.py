@@ -213,7 +213,7 @@ def load_para_data(params, data):
                 else:
                     set_dico_parameters(params, data, src_data['dico'], 'tgt')
                     set_dico_parameters(params, data, tgt_data['dico'], 'src')
-            elif (src,tgt) in params.invar_steps:
+            elif (src,tgt) in params.invar_steps or (src,tgt) in params.mass_steps :
                 set_dico_parameters(params, data, src_data['dico'], 'src')
                 set_dico_parameters(params, data, src_data['dico'], 'src')
 
@@ -243,8 +243,8 @@ def load_para_data(params, data):
             data['para'][(src, tgt)][splt] = dataset
             logger.info("")
     
-    logger.info("vocab size：src:{} tgt:{}".format(len(data['dico']['src']), len(data['dico']['tgt'])))
-    logger.info("")
+    #logger.info("vocab size：src:{} tgt:{}".format(len(data['dico']['src']), len(data['dico']['tgt'])))
+    #logger.info("")
 
 
 def check_data_params(params):

@@ -414,9 +414,11 @@ class Evaluator(object):
         for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None)):
 
             (x1, len1), (x2, len2) = batch
-
+            
             if params.mass_type == 'block':
                 x1, y1, pred_mask = self.mask_block(x1, len1)
+            elif params.mass_type == 'fill':
+                x1, y1, pred_mask = self.mask_out(x1, len1, np.random.RandomState(0))
 
             max_len = (len1 + len2).max().item()
             bsz = x1.size(1)
@@ -431,7 +433,7 @@ class Evaluator(object):
             x, y, pred_mask, lengths, positions, langs = to_cuda(x, y1, pred_mask, lengths, positions, langs)
             # forward / loss
             tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
-            word_scores, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=True)
+            word_scores, loss = model('predict', tensor=tensor[-1], pred_mask=pred_mask, y=y, get_scores=True)
 
             # update stats
             n_words += len(y)
