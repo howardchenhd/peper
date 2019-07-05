@@ -359,7 +359,7 @@ def main(params):
             for lang in shuf_order(params.ae_steps):
                 trainer.mt_step(lang, lang, params.lambda_ae)
 
-            if  params.invar_steps:
+            if  not params.invar_steps:
                 # machine translation steps
                 for lang1, lang2 in shuf_order(params.mt_steps, params):
                     if "{}-{}".format(lang1,lang2) not in params.zero_shot:
