@@ -10,7 +10,7 @@ import os
 import torch
 
 from .pretrain import load_embeddings
-from .transformer import DECODER_ONLY_PARAMS, TransformerModel  # , TRANSFORMER_LAYER_PARAMS
+from .transformer import DECODER_ONLY_PARAMS, TransformerModel, Bridge  # , TRANSFORMER_LAYER_PARAMS
 import pdb
 
 logger = getLogger()
@@ -158,7 +158,7 @@ def build_model(params, dico):
                 #     if k not in enc_reload:
                 #         logger.warning("Reassignment parameters:{}".format(k))
                 #         enc_reload[k] = v
-                encoder.load_state_dict(enc_reload)
+                encoder.load_state_dict(enc_reload, strict=False)
             # reload decoder
             if dec_path != '':
                 logger.info("Reloading decoder from %s ..." % dec_path)
@@ -205,7 +205,7 @@ def build_model(params, dico):
         if params.fix_enc:
             for p in encoder.parameters():
                 p.requires_grad = False
-
+                print("设置为true",p)
 
 
         logger.debug("Encoder: {}".format(encoder))
@@ -213,3 +213,9 @@ def build_model(params, dico):
         logger.info("Number of parameters (encoder): %i" % sum([p.numel() for p in encoder.parameters() if p.requires_grad]))
         logger.info("Number of parameters (decoder): %i" % sum([p.numel() for p in decoder.parameters() if p.requires_grad]))
         return encoder.cuda(), decoder.cuda()
+
+
+def build_bridge(params):
+    bridge = Bridge(params).cuda()
+    logger.info("Number of parameters (bridge): %i" % sum([p.numel() for p in bridge.parameters() if p.requires_grad]))
+    return bridge

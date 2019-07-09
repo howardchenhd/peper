@@ -239,6 +239,43 @@ class TransformerFFN(nn.Module):
         return x
 
 
+class Bridge(nn.Module):
+    
+    def __init__(self, params):
+        super().__init__()
+
+        
+        self.norm_emb = params.norm_emb
+        self.lang_emb = params.lang_emb  
+        self.n_heads = params.n_heads
+        self.dim = params.emb_dim       # 512 by default
+        self.dropout = params.dropout
+        self.hidden_dim = self.dim * 4
+        self.attention_dropout = params.attention_dropout
+
+        self.layer_norm1 = nn.LayerNorm(self.dim, eps=1e-12)
+        self.layer_norm2 = nn.LayerNorm(self.dim, eps=1e-12)
+        self.bridge_attn = MultiHeadAttention(self.n_heads, self.dim, dropout=self.attention_dropout)
+        self.ffns = TransformerFFN(self.dim, self.hidden_dim, self.dim, dropout=self.dropout, gelu_activation=params.gelu_activation)
+
+
+    def forward(self, src_enc, tgt_enc, x, y, len1, len2):
+        src_len, bs = x.size()
+        tgt_len, bs = y.size()
+
+        tgt_mask, tgt_attn_mask = get_masks(tgt_len, len2, False)
+        src_mask = torch.arange(len1.max(), dtype=torch.long, device=src_enc.device) < len1[:, None]
+
+        attn = self.bridge_attn(tgt_enc, src_mask, kv=src_enc, cache=None)
+        attn = F.dropout(attn, p=self.dropout, training=self.training)
+        tgt_enc = tgt_enc + attn
+        tgt_enc = self.layer_norm1(tgt_enc)
+
+        tgt_enc = tgt_enc + self.ffns(tgt_enc)
+        tgt_enc = self.layer_norm2(tgt_enc)
+        tgt_enc *= tgt_mask.unsqueeze(-1).to(tgt_enc.dtype)
+        return tgt_enc
+
 class TransformerModel(nn.Module):
 
     ATTRIBUTES = ['encoder', 'with_output', 'eos_index', 'pad_index', 'n_langs', 'n_words', 'dim', 'n_layers', 'n_heads', 'hidden_dim', 'dropout', 'attention_dropout', 'asm', 'asm_cutoffs', 'asm_div_value']
@@ -263,8 +300,6 @@ class TransformerModel(nn.Module):
 
         self.norm_emb = params.norm_emb
         self.lang_emb = params.lang_emb    
-        self.low_level_info = params.low_level_info
-        self.low_layer = params.low_layer
 
         # dictionary / languages
         self.n_langs = params.enc_langnum if params.enc_langnum != -1 else params.n_langs
@@ -307,10 +342,6 @@ class TransformerModel(nn.Module):
             self.layer_norm15 = nn.ModuleList()
             self.encoder_attn = nn.ModuleList()
 
-            if self.low_level_info:
-                self.layer_norm18 = nn.ModuleList()
-                self.encoder_attn18 = nn.ModuleList()
-
 
         for i in range(self.n_layers):
             self.attentions.append(MultiHeadAttention(self.n_heads, self.dim, dropout=self.attention_dropout))
@@ -319,10 +350,6 @@ class TransformerModel(nn.Module):
             if self.is_decoder :
                 self.layer_norm15.append(nn.LayerNorm(self.dim, eps=1e-12))
                 self.encoder_attn.append(MultiHeadAttention(self.n_heads, self.dim, dropout=self.attention_dropout))
-
-                if self.low_level_info and i < self.low_layer:
-                    self.layer_norm18.append(nn.LayerNorm(self.dim, eps=1e-12))
-                    self.encoder_attn18.append(MultiHeadAttention(self.n_heads, self.dim, dropout=self.attention_dropout))
 
             self.ffns.append(TransformerFFN(self.dim, self.hidden_dim, self.dim, dropout=self.dropout, gelu_activation=params.gelu_activation))
             self.layer_norm2.append(nn.LayerNorm(self.dim, eps=1e-12))
@@ -420,19 +447,10 @@ class TransformerModel(nn.Module):
 
             # encoder attention (for decoder only)
             if self.is_decoder and src_enc is not None:
-
-                if self.low_level_info and i < self.low_layer:
-                    low_src_enc = src_enc[i]
-                    attn = self.encoder_attn18[i](tensor, src_mask, kv=low_src_enc, cache=cache)
-                    attn = F.dropout(attn, p=self.dropout, training=self.training)
-                    tensor = tensor + attn
-                    tensor = self.layer_norm18[i](tensor)
-
                 attn = self.encoder_attn[i](tensor, src_mask, kv=src_enc[-1], cache=cache)
                 attn = F.dropout(attn, p=self.dropout, training=self.training)
                 tensor = tensor + attn
                 tensor = self.layer_norm15[i](tensor)
-
 
             # FFN
             tensor = tensor + self.ffns[i](tensor)

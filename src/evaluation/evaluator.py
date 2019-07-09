@@ -181,6 +181,8 @@ class Evaluator(object):
                 for lang1, lang2 in params.mass_steps:
                     self.evaluate_mass(scores, data_set, lang1, lang2)
 
+                for lang1, lang2 in params.bridge_steps:
+                    self.evaluate_bridge(scores, data_set, lang1,lang2)
 
                 # machine translation task (evaluate perplexity and accuracy)
                 for lang1, lang2 in set(params.mt_steps + [(l2, l3) for _, l2, l3 in params.bt_steps]):
@@ -322,10 +324,10 @@ class Evaluator(object):
                     distance = cos(f1, f2).sum().item()
                     cosine[layer].append(distance)
 
-        print("共测试 {}句".format(n_translates))
-        for i in range(model.n_layers):
-            cosine[i] = sum(cosine[i]) / n_translates
-            print("第{}层 cosine 值为{}".format(i+1, cosine[i]))
+        # print("共测试 {}句".format(n_translates))
+        # for i in range(model.n_layers):
+        #     cosine[i] = sum(cosine[i]) / n_translates
+        #     print("第{}层 cosine 值为{}".format(i+1, cosine[i]))
 
         # compute perplexity and prediction accuracy
         ppl_name = '%s_%s_mlm_ppl' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_ppl' % (data_set, lang1, lang2)
@@ -389,6 +391,62 @@ class Evaluator(object):
         else:
             return np.random.randint(1, length+1)
 
+
+    def evaluate_bridge(self, scores, data_set, lang1, lang2):
+        """
+        Evaluate perplexity and next word prediction accuracy.
+        """
+        params = self.params
+        assert data_set in ['valid', 'test']
+        assert lang1 in params.langs
+        assert lang2 in params.langs or lang2 is None
+
+        model = self.model if params.encoder_only else self.encoder
+        model.eval()
+        model = model.module if params.multi_gpu else model
+        bridge = self.bridge 
+        bridge.eval()
+        bridge = bridge.module if params.multi_gpu else bridge
+
+        rng = np.random.RandomState(0)
+
+        lang1_id = params.lang2id[lang1]
+        lang2_id = params.lang2id[lang2] 
+
+        n_words = 0
+        xe_loss = 0
+        n_valid = 0
+
+        for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None)):
+
+            (x1, len1), (x2, len2) = batch
+                
+            langs1 = x1.clone().fill_(lang1_id)
+            langs2 = x2.clone().fill_(lang2_id)
+            rng = np.random.RandomState(0)
+            x2, y2, pred_mask = self.mask_out(x2, len2, rng=rng)
+            x1, pred_mask, len1, x2, y2,len2, langs1, langs2 = to_cuda(x1, pred_mask, len1, x2, y2,len2, langs1, langs2)
+
+            src_enc = model('fwd',x=x1, lengths=len1,positions=None, langs=langs1, causal=False)[-1]
+            src_enc = src_enc.transpose(0,1)
+            tgt_enc = model('fwd',x=x2, lengths=len2,positions=None, langs=langs2, causal=False)[-1]
+            tgt_enc = tgt_enc.transpose(0,1)
+            tensor = bridge(src_enc, tgt_enc, x1, x2, len1, len2)
+            tensor = tensor.transpose(0,1)
+            word_scores, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y2, get_scores=False)
+
+            # update stats
+            n_words += len(y2)
+            xe_loss += loss.item() * len(y2)
+            n_valid += (word_scores.max(1)[1] == y2).sum().item()
+
+        # compute perplexity and prediction accuracy
+        ppl_name = '%s_%s_mlm_ppl' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_ppl' % (data_set, lang1, lang2)
+        acc_name = '%s_%s_mlm_acc' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_acc' % (data_set, lang1, lang2)
+        scores[ppl_name] = np.exp(xe_loss / n_words) if n_words > 0 else 1e9
+        scores[acc_name] = 100. * n_valid / n_words if n_words > 0 else 0.
+ 
+
     def evaluate_mass(self, scores, data_set, lang1, lang2):
         """
         Evaluate perplexity and next word prediction accuracy.
@@ -431,7 +489,7 @@ class Evaluator(object):
             x, y, pred_mask, lengths, positions, langs = to_cuda(x, y1, pred_mask, lengths, positions, langs)
             # forward / loss
             tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
-            word_scores, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=True)
+            word_scores, loss = model('predict', tensor=tensor[-1], pred_mask=pred_mask, y=y, get_scores=True)
 
             # update stats
             n_words += len(y)
@@ -450,12 +508,13 @@ class Evaluator(object):
 
 class SingleEvaluator(Evaluator):
 
-    def __init__(self, trainer, data, params):
+    def __init__(self, trainer, data, params,bridge=None):
         """
         Build language model evaluator.
         """
         super().__init__(trainer, data, params)
         self.model = trainer.model
+        self.bridge = bridge
 
 
 class EncDecEvaluator(Evaluator):

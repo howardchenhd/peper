@@ -90,8 +90,8 @@ class Trainer(object):
             [('MT-%s-%s' % (l1, l2), []) for l1, l2 in params.mt_steps] +
             [('BT-%s-%s-%s' % (l1, l2, l3), []) for l1, l2, l3 in params.bt_steps] +
             [('MA-%s-%s' % (l1, l2), []) for l1, l2 in params.mass_steps] +
-            [('INVAR-%s-%s' % (l1, l2), []) for l1, l2 in params.invar_steps]
-
+            [('INVAR-%s-%s' % (l1, l2), []) for l1, l2 in params.invar_steps] + 
+            [('BRIDGE-%s-%s' % (l1, l2), []) for l1, l2 in params.bridge_steps]
         )
         self.last_time = time.time()
 
@@ -101,16 +101,12 @@ class Trainer(object):
         # initialize lambda coefficients and their configurations
         parse_lambda_config(params)
 
-    def bulid_discriminator(self, params):
-
-        self.optimizers['dis'] = self.get_optimizer_fp('dis')
-        self.dis = Discriminator(params)
 
     def get_optimizer_fp(self, module):
         """
         Build optimizer.
         """
-        assert module in ['model', 'encoder', 'decoder', 'dis']
+        assert module in ['model', 'encoder', 'decoder', 'bridge']
         optimizer = get_optimizer(getattr(self, module).parameters(), self.params.optimizer)
         if self.params.fp16:
             from apex.fp16_utils import FP16_Optimizer
@@ -234,7 +230,6 @@ class Trainer(object):
         assert stream is False or lang2 is None
         iterator = self.iterators.get((iter_name, lang1, lang2), None)
         if iterator is None:
-            print(lang1,lang2)
             iterator = self.get_iterator(iter_name, lang1, lang2, stream)
         try:
             x = next(iterator)
@@ -704,6 +699,48 @@ class Trainer(object):
         self.stats['processed_s'] += lengths.size(0)
         self.stats['processed_w'] += pred_mask.sum().item()
 
+    def bridge_step(self, lang1, lang2, lambda_coeff):
+        
+        assert lambda_coeff >= 0
+        if lambda_coeff == 0:
+            return
+        params = self.params
+        model = getattr(self, 'model')
+        model.train()
+        bridge = getattr(self, 'bridge')
+        bridge.train()
+        module = ['model','bridge']
+        
+        (x1, len1), (x2, len2) = self.get_batch('bridge', lang1, lang2)
+        lang1_id = params.lang2id[lang1]
+        lang2_id = params.lang2id[lang2]
+        langs1 = x1.clone().fill_(lang1_id)
+        langs2 = x2.clone().fill_(lang2_id)
+
+        x2, y2, pred_mask = self.mask_out(x2, len2)
+        x1, pred_mask, len1, x2, y2,len2, langs1, langs2 = to_cuda(x1, pred_mask, len1, x2, y2,len2, langs1, langs2)
+
+        src_enc = model('fwd',x=x1, lengths=len1,positions=None, langs=langs1, causal=False)[-1]
+        src_enc = src_enc.transpose(0,1)
+        tgt_enc = model('fwd',x=x2, lengths=len2,positions=None, langs=langs2, causal=False)[-1]
+        tgt_enc = tgt_enc.transpose(0,1)
+        tensor = bridge(src_enc, tgt_enc, x1, x2, len1, len2)
+        tensor = tensor.transpose(0,1)
+        _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y2, get_scores=False)
+        
+        self.stats[('BRIDGE-%s-%s' % (lang1, lang2))].append(loss.item())
+        loss = lambda_coeff * loss
+
+        if params.fix_enc:
+            module.remove('model')
+        # optimize
+        self.optimize(loss, module)
+
+        # number of processed sentences / words
+        self.n_sentences += params.batch_size
+        self.stats['processed_s'] += len1.size(0)
+        self.stats['processed_w'] += pred_mask.sum().item()
+
     def mlm_step(self, lang1, lang2, lambda_coeff):
         """
         Masked word prediction step.
@@ -727,7 +764,8 @@ class Trainer(object):
 
         # forward / loss
         tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
-        _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
+
+        _, loss = model('predict', tensor=tensor[-1], pred_mask=pred_mask, y=y, get_scores=False)
         self.stats[('MLM-%s' % lang1) if lang2 is None else ('MLM-%s-%s' % (lang1, lang2))].append(loss.item())
         loss = lambda_coeff * loss
 
@@ -760,7 +798,7 @@ class Trainer(object):
 
         # forward / loss
         tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
-        _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y, get_scores=False)
+        _, loss = model('predict', tensor=tensor[-1], pred_mask=pred_mask, y=y, get_scores=False)
         self.stats[('MA-%s-%s' % (lang1, lang2))].append(loss.item())
         loss = lambda_coeff * loss
 
@@ -830,18 +868,20 @@ class Trainer(object):
 
 class SingleTrainer(Trainer):
 
-    def __init__(self, model, data, params):
+    def __init__(self, model, data, params, bridge=None):
 
-        self.MODEL_NAMES = ['model']
+        self.MODEL_NAMES = ['model','bridge']
 
         # model / data / params
         self.model = model
         self.data = data
         self.params = params
-
+        
         # optimizers
         self.optimizers = {'model': self.get_optimizer_fp('model')}
-
+        if bridge:
+            self.bridge = bridge
+            self.optimizers['bridge'] = self.get_optimizer_fp('bridge')
         super().__init__(data, params)
 
 
@@ -911,6 +951,7 @@ class EncDecTrainer(Trainer):
         enc1 = self.encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)
         enc1 = [enc.transpose(0, 1) for enc in enc1]#enc1.transpose(0, 1)
 
+
         # decode target sentence
         dec2 = self.decoder('fwd', x=x2, lengths=len2, langs=langs2, causal=True, src_enc=enc1, src_len=len1)
 
@@ -973,7 +1014,7 @@ class EncDecTrainer(Trainer):
             
             enc1_ctx =  self.get_attention(enc1[-1], bos_embedding, enc1_mask)
             enc2_ctx =  self.get_attention(enc2[-1], bos_embedding, enc2_mask)
-            
+
             cos = nn.CosineSimilarity(dim=1, eps=1e-6)
             loss += (1 - cos(enc1_ctx, enc2_ctx)).mean()
             loss = loss * lambda_coeff
@@ -989,21 +1030,17 @@ class EncDecTrainer(Trainer):
                 loss_layer = (1 - cos(enc1_max_pooling , enc2_max_polling)).mean()
                 loss += loss_layer
         else :
-            bos_batch1 = x1.new_full((x1.size(1),1), params.eos_index)
-            bos_batch2 = x1.new_full((x1.size(1),1), params.eos_index)
-            langid1 = x1.new_full((x1.size(1),1),tgt_id).t()
-            langid2 = x1.new_full((x1.size(1),1),tgt_id).t()
-
+            bos_batch = x1.new_full((x1.size(1),1), params.eos_index)
+            langid = x1.new_full((x1.size(1),1),tgt_id).t()
             loss =0 
 
-            with torch.no_grad():
-                length1 = x1.new_full((x1.size(1),),1)
-                length2 = length1.clone().contiguous() #x2.new_full((x1.size(1),),1)
-                enc1_ctx = self.decoder('fwd', x=bos_batch1.t(), lengths=length1, langs=langid1, causal=True, src_enc=enc1, src_len=len1)
-                enc2_ctx = self.decoder('fwd', x=bos_batch2.t(), lengths=length2, langs=langid2, causal=True, src_enc=enc2, src_len=len2)
+        
+            length = x1.new_full((x1.size(1),),1)
+            enc1_ctx = self.decoder('fwd', x=bos_batch.t(), lengths=length, langs=langid, causal=True, src_enc=enc1, src_len=len1)
+            enc2_ctx = self.decoder('fwd', x=bos_batch.t(), lengths=length, langs=langid, causal=True, src_enc=enc2, src_len=len2)
 
-                assert enc1_ctx.size(1) == x1.size(1) and enc1_ctx.size(0) == 1 and enc2_ctx.size(0) == 1
-                enc1_ctx, enc2_ctx = enc1_ctx.transpose(0,1), enc2_ctx.transpose(0,1) # bsz sqlen dim
+            assert enc1_ctx.size(1) == x1.size(1) and enc1_ctx.size(0) == 1 and enc2_ctx.size(0) == 1
+            enc1_ctx, enc2_ctx = enc1_ctx.transpose(0,1), enc2_ctx.transpose(0,1) # bsz sqlen dim
 
             cos = nn.CosineSimilarity(dim=1, eps=1e-6)
             loss += (1 - cos(enc1_ctx, enc2_ctx)).mean()

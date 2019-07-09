@@ -13,7 +13,7 @@ from torch import nn
 from src.slurm import init_signal_handler, init_distributed_mode
 from src.data.loader import check_data_params, load_data
 from src.utils import bool_flag, initialize_exp, set_sampling_probs, shuf_order, reset_lang
-from src.model import check_model_params, build_model
+from src.model import check_model_params, build_model, build_bridge
 from src.trainer import SingleTrainer, EncDecTrainer
 from src.evaluation.evaluator import SingleEvaluator, EncDecEvaluator
 
@@ -160,6 +160,9 @@ def get_parser():
     parser.add_argument("--lambda_mass", type=float, default=1,
                         help="MASS coefficient")
     
+    parser.add_argument("--lambda_bridge", type=float, default=1,
+                        help="bridge coefficient")
+
     parser.add_argument("--lambda_invar", type=float, default=1,
                         help="invar coefficient")
 
@@ -179,11 +182,16 @@ def get_parser():
     parser.add_argument("--invar_steps", type=str, default="",
                         help="invariant_steps, train encoder like tlm")
 
+
     parser.add_argument("--invar_type", type=str, default="",
                         help="choice:['cosine','selfattn','wordprob']")
 
     parser.add_argument("--mass_steps", type=str, default="",
                         help="Mask Block piecess steps")
+
+    parser.add_argument("--bridge_steps", type=str, default="",
+                        help="bridge steps")
+
     parser.add_argument("--mass_type", type=str, default="block",
                         help="choice:['shuffle' , 'fill' ,'block']")
     parser.add_argument("--block_size", type=float, default=0.5,
@@ -225,6 +233,7 @@ def get_parser():
     parser.add_argument("--fix_enc",type=bool_flag, default=False)
     parser.add_argument("--fix_enc_emb",type=bool_flag, default=False)
     parser.add_argument("--fix_enc_layers",type=int, default=-1)
+    parser.add_argument("--fix_enc_steps",type=int, default=-1)
 
     # multilinual NMT
     parser.add_argument("--enc_special", type=bool_flag, default=False,
@@ -244,11 +253,6 @@ def get_parser():
                         help="Number of lang for encoder, when default=-1, enc_langnum == n_langs")
     parser.add_argument("--real_tgtlang",type=str,default="",
                        help= "")
-    
-    parser.add_argument("--low_level_info",type=bool_flag,default=False)
-    parser.add_argument("--low_layer",type=int,default=-1)
-
-
     return parser
 
 
@@ -271,6 +275,9 @@ def main(params):
     # build model
     if params.encoder_only:
         model = build_model(params, data['dico']['src'])
+        
+        if params.bridge_steps:
+            bridge = build_bridge(params)
     else:
         encoder, decoder = build_model(params, data['dico'])
 
@@ -296,6 +303,7 @@ def main(params):
         else:
             if params.encoder_only:
                 model = nn.parallel.DistributedDataParallel(model, device_ids=[params.local_rank], output_device=params.local_rank, broadcast_buffers=True)
+                bridge = nn.parallel.DistributedDataParallel(bridge, device_ids=[params.local_rank], output_device=params.local_rank, broadcast_buffers=True)
             else:
                 encoder = nn.parallel.DistributedDataParallel(encoder, device_ids=[params.local_rank], output_device=params.local_rank, broadcast_buffers=True)
                 decoder = nn.parallel.DistributedDataParallel(decoder, device_ids=[params.local_rank], output_device=params.local_rank, broadcast_buffers=True)
@@ -303,8 +311,8 @@ def main(params):
 
     # build trainer, reload potential checkpoints / build evaluator
     if params.encoder_only:
-        trainer = SingleTrainer(model, data, params)
-        evaluator = SingleEvaluator(trainer, data, params)
+        trainer = SingleTrainer(model, data, params, bridge=bridge)
+        evaluator = SingleEvaluator(trainer, data, params, bridge=bridge)
     else:
         trainer = EncDecTrainer(encoder, decoder, data, params)
         evaluator = EncDecEvaluator(trainer, data, params)
@@ -322,23 +330,27 @@ def main(params):
     # set sampling probabilities for training
     set_sampling_probs(data, params)
 
-
+    fix_enc_steps = 0
     # language model training
-    for _ in range(params.max_epoch):
+    for epoch in range(params.max_epoch):
 
         logger.info("============ Starting epoch %i ... ============" % trainer.epoch)
 
         trainer.n_sentences = 0
 
+        if epoch == 1:
+            params.fix_enc = False
+
+
         while trainer.n_sentences < trainer.epoch_size:
 
+            #if params.fix_enc_steps != -1 and fix_enc_steps > params.fix_enc_steps:
             # mt_steps = [(lang1,lang2) for lang1,lang2 in params.mt_steps if "{}-{}".format(lang1,lang2)  not in params.zero_shot]
             # #invariant steps
             # for (lang1, lang2), (lang3,lang4) in zip(shuf_order(params.invar_steps, params),shuf_order(mt_steps, params)):
-            #     print(lang3, lang4)
-            #     loss1 = trainer.mt_step(lang3, lang4, params.lambda_mt, backward=True)
-            #     #trainer.invar_step(lang1, lang2, params.lambda_invar, backward=True, loss_=loss1)
-            #     #trainer.invar_step(lang1, lang2, params.lambda_invar, backward=True)
+            #     loss1 = trainer.mt_step(lang3, lang4, params.lambda_mt, backward=False)
+            #     trainer.invar_step(lang1, lang2, params.lambda_invar, backward=True, loss_=loss1)
+
             # CLM steps
             for lang1, lang2 in shuf_order(params.clm_steps, params):
                 trainer.clm_step(lang1, lang2, params.lambda_clm)
@@ -359,17 +371,19 @@ def main(params):
             for lang in shuf_order(params.ae_steps):
                 trainer.mt_step(lang, lang, params.lambda_ae)
 
-            if  params.invar_steps:
-                # machine translation steps
-                for lang1, lang2 in shuf_order(params.mt_steps, params):
-                    if "{}-{}".format(lang1,lang2) not in params.zero_shot:
-                        trainer.mt_step(lang1, lang2, params.lambda_mt)
-            
+            # machine translation steps
+            for lang1, lang2 in shuf_order(params.mt_steps, params):
+                if "{}-{}".format(lang1,lang2) not in params.zero_shot:
+                    trainer.mt_step(lang1, lang2, params.lambda_mt)
+        
+            for lang1, lang2 in shuf_order(params.bridge_steps, params):
+                trainer.bridge_step(lang1, lang2, params.lambda_bridge)
 
             # back-translation steps
             for lang1, lang2, lang3 in shuf_order(params.bt_steps):
                 trainer.bt_step(lang1, lang2, lang3, params.lambda_bt)
 
+            fix_enc_steps += params.batch_size
             trainer.iter()
 
         logger.info("============ End of epoch %i ============" % trainer.epoch)

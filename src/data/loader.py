@@ -176,10 +176,9 @@ def load_para_data(params, data):
         data['dico'] = {}
 
     required_para_train = set(params.clm_steps + params.mlm_steps + params.pc_steps \
-                            + params.mt_steps + params.mass_steps + params.invar_steps)
+                            + params.mt_steps + params.mass_steps + params.invar_steps + params.bridge_steps)
 
     for src, tgt in params.para_dataset.keys():
-
 
         logger.info('============ Parallel data (%s-%s)' % (src, tgt))
 
@@ -187,7 +186,7 @@ def load_para_data(params, data):
         data['para'][(src, tgt)] = {}
 
         for splt in ['train', 'valid', 'test']:
-
+        
             if "{}-{}".format(src,tgt) in params.zero_shot and (splt=='train' and (src,tgt) not in params.invar_steps):
                 continue
 
@@ -213,7 +212,7 @@ def load_para_data(params, data):
                 else:
                     set_dico_parameters(params, data, src_data['dico'], 'tgt')
                     set_dico_parameters(params, data, tgt_data['dico'], 'src')
-            elif (src,tgt) in params.invar_steps:
+            elif (src,tgt) in params.invar_steps or (src,tgt) in params.mass_steps or (src,tgt) in params.bridge_steps:
                 set_dico_parameters(params, data, src_data['dico'], 'src')
                 set_dico_parameters(params, data, src_data['dico'], 'src')
 
@@ -243,9 +242,7 @@ def load_para_data(params, data):
             data['para'][(src, tgt)][splt] = dataset
             logger.info("")
     
-    logger.info("vocab size：src:{} tgt:{}".format(len(data['dico']['src']), len(data['dico']['tgt'])))
-    logger.info("")
-
+    
 
 def check_data_params(params):
     """
@@ -286,6 +283,13 @@ def check_data_params(params):
     assert all([l1 in params.langs and l2 in params.langs for l1, l2 in params.mass_steps])
     assert all([l1 != l2 for l1, l2 in params.mass_steps])
     assert len(params.mass_steps) == len(set(params.mass_steps))
+
+    #Bridge steps
+    params.bridge_steps = [tuple(s.split('-')) for s in params.bridge_steps.split(',') if len(s) > 0]
+    assert all([len(x) == 2 for x in params.bridge_steps])
+    assert all([l1 in params.langs and l2 in params.langs for l1, l2 in params.bridge_steps])
+    assert all([l1 != l2 for l1, l2 in params.bridge_steps])
+    assert len(params.bridge_steps) == len(set(params.bridge_steps))
 
     # parallel classification steps
     params.pc_steps = [tuple(s.split('-')) for s in params.pc_steps.split(',') if len(s) > 0]
@@ -335,7 +339,7 @@ def check_data_params(params):
     # check parallel datasets
     required_para_train = set(params.clm_steps + params.mlm_steps +\
                               params.pc_steps + params.mt_steps +\
-                              params.mass_steps + params.invar_steps)
+                              params.mass_steps + params.invar_steps + params.bridge_steps)
     
     required_para = required_para_train | set([(l2, l3) for _, l2, l3 in params.bt_steps])
     params.para_dataset = {
