@@ -212,6 +212,7 @@ def load_para_data(params, data):
                 else:
                     set_dico_parameters(params, data, src_data['dico'], 'tgt')
                     set_dico_parameters(params, data, tgt_data['dico'], 'src')
+
             elif (src,tgt) in params.invar_steps or (src,tgt) in params.mass_steps or (src,tgt) in params.bridge_steps:
                 set_dico_parameters(params, data, src_data['dico'], 'src')
                 set_dico_parameters(params, data, src_data['dico'], 'src')
@@ -243,6 +244,7 @@ def load_para_data(params, data):
             logger.info("")
     
     
+
 
 def check_data_params(params):
     """

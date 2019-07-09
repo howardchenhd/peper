@@ -764,7 +764,10 @@ class Trainer(object):
 
         # forward / loss
         tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/master
         _, loss = model('predict', tensor=tensor[-1], pred_mask=pred_mask, y=y, get_scores=False)
         self.stats[('MLM-%s' % lang1) if lang2 is None else ('MLM-%s-%s' % (lang1, lang2))].append(loss.item())
         loss = lambda_coeff * loss

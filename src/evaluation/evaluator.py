@@ -472,9 +472,11 @@ class Evaluator(object):
         for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None)):
 
             (x1, len1), (x2, len2) = batch
-
+            
             if params.mass_type == 'block':
                 x1, y1, pred_mask = self.mask_block(x1, len1)
+            elif params.mass_type == 'fill':
+                x1, y1, pred_mask = self.mask_out(x1, len1, np.random.RandomState(0))
 
             max_len = (len1 + len2).max().item()
             bsz = x1.size(1)

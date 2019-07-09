@@ -379,6 +379,7 @@ def main(params):
             for lang1, lang2 in shuf_order(params.bridge_steps, params):
                 trainer.bridge_step(lang1, lang2, params.lambda_bridge)
 
+
             # back-translation steps
             for lang1, lang2, lang3 in shuf_order(params.bt_steps):
                 trainer.bt_step(lang1, lang2, lang3, params.lambda_bt)
