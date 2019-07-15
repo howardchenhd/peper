@@ -941,7 +941,7 @@ class EncDecTrainer(Trainer):
 
         if params.enc_special:
             #x1[0] = lang2_id + 6
-        
+            pass
         if params.dec_special:
             #logger.warning("Dec_special is not implement!!!")
             x2[0] = params.lang_specid[lang2] 

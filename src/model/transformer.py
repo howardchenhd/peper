@@ -246,7 +246,6 @@ class Bridge(nn.Module):
 
         
         self.norm_emb = params.norm_emb
-        self.lang_emb = params.lang_emb  
         self.n_heads = params.n_heads
         self.dim = params.emb_dim       # 512 by default
         self.dropout = params.dropout
@@ -297,7 +296,8 @@ class TransformerModel(nn.Module):
             self.n_words = params.n_words['tgt']
 
         self.norm_emb = params.norm_emb
-        self.lang_emb = params.lang_emb    
+        self.enc_langemb = params.enc_langemb
+        self.dec_langemb = params.dec_langemb            
         self.dec_special = params.dec_special
 
         # dictionary / languages
