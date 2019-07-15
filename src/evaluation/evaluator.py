@@ -176,6 +176,7 @@ class Evaluator(object):
 
                 # prediction task (evaluate perplexity and accuracy)
                 for lang1, lang2 in params.mlm_steps:
+                    print(lang1,lang2)
                     self.evaluate_mlm(scores, data_set, lang1, lang2)
 
                 for lang1, lang2 in params.mass_steps:
@@ -324,11 +325,11 @@ class Evaluator(object):
                     distance = cos(f1, f2).sum().item()
                     cosine[layer].append(distance)
 
-        # print("共测试 {}句".format(n_translates))
-        # for i in range(model.n_layers):
-        #     cosine[i] = sum(cosine[i]) / n_translates
-        #     print("第{}层 cosine 值为{}".format(i+1, cosine[i]))
-
+        print("共测试 {}句".format(n_translates))
+        for i in range(model.n_layers):
+            cosine[i] = sum(cosine[i]) / n_translates
+            #print("第{}层 cosine 值为{}".format(i+1, cosine[i]))
+            print(cosine[i])
         # compute perplexity and prediction accuracy
         ppl_name = '%s_%s_mlm_ppl' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_ppl' % (data_set, lang1, lang2)
         acc_name = '%s_%s_mlm_acc' % (data_set, lang1) if lang2 is None else '%s_%s-%s_mlm_acc' % (data_set, lang1, lang2)
@@ -572,7 +573,12 @@ class EncDecEvaluator(Evaluator):
             x1, len1, langs1, x2, len2, langs2, y = to_cuda(x1, len1, langs1, x2, len2, langs2, y)
 
             if params.enc_special:
-                x1[0] = lang2_id + 6
+                pass
+                #assert params.lang_specid[lang2] >= 6
+
+            if params.dec_special:
+                x2[0] =  params.lang_specid[lang2]
+                assert params.lang_specid[lang2] >= 6
 
             # encode source sentence
             enc1 = encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)

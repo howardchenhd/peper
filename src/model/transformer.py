@@ -291,8 +291,6 @@ class TransformerModel(nn.Module):
         self.is_decoder = not is_encoder
         self.with_output = with_output
 
-        #print(params)
-        #print(params.n_words)
         if self.is_encoder:
             self.n_words = params.n_words['src']
         else:
@@ -300,6 +298,7 @@ class TransformerModel(nn.Module):
 
         self.norm_emb = params.norm_emb
         self.lang_emb = params.lang_emb    
+        self.dec_special = params.dec_special
 
         # dictionary / languages
         self.n_langs = params.enc_langnum if params.enc_langnum != -1 else params.n_langs
@@ -308,6 +307,7 @@ class TransformerModel(nn.Module):
         self.dico = dico
         self.id2lang = params.id2lang
         self.lang2id = params.lang2id
+        self.params =params
 
         if self.is_encoder:
             assert len(self.dico) == self.n_words , "{} {}".format(len(self.dico),self.n_words)
@@ -319,7 +319,7 @@ class TransformerModel(nn.Module):
         self.dim = params.emb_dim       # 512 by default
         self.hidden_dim = self.dim * 4  # 2048 by default
         self.n_heads = params.n_heads   # 8 by default
-        self.n_layers = params.n_layers
+        self.n_layers = params.dec_layers if self.is_decoder else params.enc_layers
         self.dropout = params.dropout
         self.attention_dropout = params.attention_dropout
         assert self.dim % self.n_heads == 0, 'transformer dim must be a multiple of n_heads'
@@ -426,7 +426,10 @@ class TransformerModel(nn.Module):
         tensor = self.embeddings(x)
         tensor = tensor + self.position_embeddings(positions).expand_as(tensor)
         
-        if self.lang_emb:
+        if self.params.enc_langemb and self.is_encoder:
+            tensor = tensor + self.lang_embeddings(langs)
+
+        if self.params.dec_langemb and self.is_decoder:
             tensor = tensor + self.lang_embeddings(langs)
 
         if self.norm_emb:
@@ -508,6 +511,10 @@ class TransformerModel(nn.Module):
         generated = src_len.new(max_len, bs)  # upcoming output
         generated.fill_(self.pad_index)       # fill upcoming ouput with <PAD>
         generated[0].fill_(self.eos_index)    # we use <EOS> for <BOS> everywhere
+
+        if self.dec_special:
+            lang = self.id2lang[tgt_lang_id]
+            generated[0].fill_(self.params.lang_specid[lang])
 
         # positions
         positions = src_len.new(max_len).long()
@@ -604,6 +611,10 @@ class TransformerModel(nn.Module):
         generated = src_len.new(max_len, bs * beam_size)  # upcoming output
         generated.fill_(self.pad_index)                   # fill upcoming ouput with <PAD>
         generated[0].fill_(self.eos_index)                # we use <EOS> for <BOS> everywhere
+
+        if self.dec_special:
+            lang = self.id2lang[tgt_lang_id]
+            generated[0].fill_(self.params.lang_specid[lang])
 
         # generated hypotheses
         generated_hyps = [BeamHypotheses(beam_size, length_penalty, early_stopping, max_len) for _ in range(bs)]

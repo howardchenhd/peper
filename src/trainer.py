@@ -353,7 +353,10 @@ class Trainer(object):
 
         # do not predict padding
         pred_mask[x == params.pad_index] = 0
-        pred_mask[x == params.eos_index] = 0  # TODO: remove
+        #pred_mask[x == params.eos_index] = 0  # TODO: remove
+
+        if len(x[pred_mask]) == 0:
+            pred_mask[x == params.eos_index] = 1
 
         # mask a number of words == 0 [8] (faster with fp16)
         if params.fp16:
@@ -533,8 +536,9 @@ class Trainer(object):
         }
 
         for name in self.MODEL_NAMES:
-            data[name] = getattr(self, name).state_dict()
-            data[name + '_optimizer'] = self.optimizers[name].state_dict()
+            if hasattr(self, name):
+                data[name] = getattr(self, name).state_dict()
+                data[name + '_optimizer'] = self.optimizers[name].state_dict()
 
         #data['dico_id2word'] = self.data['dico'].id2word
         #data['dico_word2id'] = self.data['dico'].word2id
@@ -549,7 +553,7 @@ class Trainer(object):
         """
         Reload a checkpoint if we find one.
         """
-        checkpoint_path = os.path.join(self.params.dump_path, 'checkpoint.pth_best')
+        checkpoint_path = os.path.join(self.params.dump_path, 'checkpoint.pth')
         if not os.path.isfile(checkpoint_path):
             return
         logger.warning('Reloading checkpoint from %s ...' % checkpoint_path)
@@ -721,9 +725,11 @@ class Trainer(object):
         x1, pred_mask, len1, x2, y2,len2, langs1, langs2 = to_cuda(x1, pred_mask, len1, x2, y2,len2, langs1, langs2)
 
         src_enc = model('fwd',x=x1, lengths=len1,positions=None, langs=langs1, causal=False)[-1]
-        src_enc = src_enc.transpose(0,1)
+        src_enc = src_enc.transpose(0,1) # bsz sqlen dim 
         tgt_enc = model('fwd',x=x2, lengths=len2,positions=None, langs=langs2, causal=False)[-1]
         tgt_enc = tgt_enc.transpose(0,1)
+
+        # Information fusion between src_enc and tgt_
         tensor = bridge(src_enc, tgt_enc, x1, x2, len1, len2)
         tensor = tensor.transpose(0,1)
         _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y2, get_scores=False)
@@ -869,9 +875,11 @@ class Trainer(object):
 class SingleTrainer(Trainer):
 
     def __init__(self, model, data, params, bridge=None):
-
-        self.MODEL_NAMES = ['model','bridge']
-
+        
+        if params.bridge_steps:
+            self.MODEL_NAMES = ['model','bridge']
+        else:
+            self.MODEL_NAMES = ['model']
         # model / data / params
         self.model = model
         self.data = data
@@ -882,6 +890,8 @@ class SingleTrainer(Trainer):
         if bridge:
             self.bridge = bridge
             self.optimizers['bridge'] = self.get_optimizer_fp('bridge')
+        else:
+            self.bridge = bridge
         super().__init__(data, params)
 
 
@@ -930,10 +940,12 @@ class EncDecTrainer(Trainer):
             (x1, len1), (x2, len2) = self.get_batch('mt', lang1, lang2)
 
         if params.enc_special:
-            x1[0] = lang2_id + 6
+            #x1[0] = lang2_id + 6
         
         if params.dec_special:
-            logger.warning("Dec_special is not implement!!!")
+            #logger.warning("Dec_special is not implement!!!")
+            x2[0] = params.lang_specid[lang2] 
+            assert params.lang_specid[lang2] >= 6
 
         langs1 = x1.clone().fill_(lang1_id)
         langs2 = x2.clone().fill_(lang2_id)

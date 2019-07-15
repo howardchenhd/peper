@@ -121,7 +121,24 @@ def build_model(params, dico):
             #             logger.warning("Parameter %s not found. Ignoring ..." % k)
             #             reloaded[k] = model.state_dict()[k]
 
-            model.load_state_dict(reloaded)
+            model.load_state_dict(reloaded,strict=False)
+
+        if params.fix_enc_layers != -1:
+            assert params.fix_enc_layers >= 0
+            if params.fix_enc_layers == params.enc_layers:
+                params.fix_enc = True
+
+
+            model.position_embeddings.weight.requires_grad = False
+            model.lang_embeddings.weight.requires_grad = False
+            model.layer_norm_emb.weight.requires_grad = False
+            model.layer_norm_emb.bias.requires_grad = False
+            model.embeddings.weight.requires_grad = False
+
+            for layer in range(params.fix_enc_layers):
+                for name, p in model.named_parameters():
+                    if  '.{}.'.format(layer) in name:
+                        p.requires_grad = False
 
         logger.debug("Model: {}".format(model))
         logger.info("Number of parameters (model): %i" % sum([p.numel() for p in model.parameters() if p.requires_grad]))
@@ -158,7 +175,7 @@ def build_model(params, dico):
                 #     if k not in enc_reload:
                 #         logger.warning("Reassignment parameters:{}".format(k))
                 #         enc_reload[k] = v
-                encoder.load_state_dict(enc_reload, strict=False)
+                encoder.load_state_dict(enc_reload,strict=False)
             # reload decoder
             if dec_path != '':
                 logger.info("Reloading decoder from %s ..." % dec_path)
@@ -205,7 +222,6 @@ def build_model(params, dico):
         if params.fix_enc:
             for p in encoder.parameters():
                 p.requires_grad = False
-                print("设置为true",p)
 
 
         logger.debug("Encoder: {}".format(encoder))
