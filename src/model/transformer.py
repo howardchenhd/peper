@@ -250,7 +250,7 @@ class Bridge(nn.Module):
         self.dim = params.emb_dim       # 512 by default
         self.dropout = params.dropout
         self.hidden_dim = self.dim * 4
-        self.attention_dropout = params.attention_dropout
+        self.attention_dropout = params.enc_attention_dropout
 
         self.layer_norm1 = nn.LayerNorm(self.dim, eps=1e-12)
         self.layer_norm2 = nn.LayerNorm(self.dim, eps=1e-12)
@@ -321,7 +321,7 @@ class TransformerModel(nn.Module):
         self.n_heads = params.n_heads   # 8 by default
         self.n_layers = params.dec_layers if self.is_decoder else params.enc_layers
         self.dropout = params.dropout
-        self.attention_dropout = params.attention_dropout
+        self.attention_dropout = params.enc_attention_dropout if params.is_encoder else params.dec_attention_dropout
         assert self.dim % self.n_heads == 0, 'transformer dim must be a multiple of n_heads'
 
         # embeddings
@@ -432,8 +432,12 @@ class TransformerModel(nn.Module):
         if self.params.dec_langemb and self.is_decoder:
             tensor = tensor + self.lang_embeddings(langs)
 
-        if self.norm_emb:
+        if self.norm_emb and self.params.dec_langemb and self.is_decoder:
             tensor = self.layer_norm_emb(tensor)
+        
+        if self.norm_emb and self.params.enc_langemb and self.is_encoder:
+            tensor = self.layer_norm_emb(tensor)
+        
         
         tensor = F.dropout(tensor, p=self.dropout, training=self.training)
         tensor *= mask.unsqueeze(-1).to(tensor.dtype)

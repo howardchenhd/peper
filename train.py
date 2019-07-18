@@ -59,8 +59,12 @@ def get_parser():
                         help="Number of Transformer heads")
     parser.add_argument("--dropout", type=float, default=0,
                         help="Dropout")
-    parser.add_argument("--attention_dropout", type=float, default=0,
+    
+    parser.add_argument("--enc_attention_dropout", type=float, default=0,
                         help="Dropout in the attention layer")
+    parser.add_argument("--dec_attention_dropout", type=float, default=0,
+                        help="Dropout in the attention layer")
+
     parser.add_argument("--gelu_activation", type=bool_flag, default=False,
                         help="Use a GELU activation instead of ReLU")
     parser.add_argument("--share_inout_emb", type=bool_flag, default=True,
@@ -69,7 +73,9 @@ def get_parser():
                         help="Use sinusoidal embeddings")
     parser.add_argument("--norm_emb", type=bool_flag, default=True,
                         help="if do layer_norm on embedding")
-    parser.add_argument("--lang_emb", type=bool_flag, default=True,
+    parser.add_argument("--enc_langemb", type=bool_flag, default=True,
+                        help="if add lang_emb")
+    parser.add_argument("--dec_langemb", type=bool_flag, default=True,
                         help="if add lang_emb")
 
 
@@ -233,15 +239,15 @@ def get_parser():
     parser.add_argument("--fix_enc",type=bool_flag, default=False)
     parser.add_argument("--fix_enc_emb",type=bool_flag, default=False)
     parser.add_argument("--fix_enc_layers",type=int, default=-1)
-    parser.add_argument("--fix_enc_steps",type=int, default=-1)
+    parser.add_argument("--fix_enc_epoch",type=int, default=-1)
 
     # multilinual NMT
-    parser.add_argument("--enc_special", type=bool_flag, default=False,
-                        help="replace encoder <bos> with langid + 5")
     parser.add_argument("--dec_special", type=bool_flag, default=False,
-                        help="replace decoder <bos> with langid + 5")
+                        help="")
     parser.add_argument("--zero_shot", nargs='*', default=[],
                         help=" if given [es fr zh], the zero shot is es-fr es-zh fr-zh.")
+    parser.add_argument("--lang_specid", type, default="",
+                        help="en:6,ch:7 must >= 6")
     
     parser.add_argument("--eval_num",type=int,default=200)
     parser.add_argument("--eval_type",nargs="*",default=['valid'])
@@ -251,12 +257,18 @@ def get_parser():
                        help= "for transfer learning, eg. en:0,ch:1")
     parser.add_argument("--enc_langnum",type=int,default=-1,
                         help="Number of lang for encoder, when default=-1, enc_langnum == n_langs")
-    parser.add_argument("--real_tgtlang",type=str,default="",
-                       help= "")
     return parser
 
+def my_check(params):
+    assert params.fix_enc_epoch == -1 or params.fix_enc_epoch >=1
+    if params.fix_enc_epoch >=1:
+        assert params.fix_enc
+    params.lang_specid = { em.split(":")[0] : int(em.split(":")[1]) for em in params.lang_specid.split(',')}
 
 def main(params):
+
+
+    my_check(params)
 
     reset_lang(params)
 
@@ -271,7 +283,7 @@ def main(params):
 
     # load data
     data = load_data(params)
-
+    bridge = None
     # build model
     if params.encoder_only:
         model = build_model(params, data['dico']['src'])
@@ -303,7 +315,8 @@ def main(params):
         else:
             if params.encoder_only:
                 model = nn.parallel.DistributedDataParallel(model, device_ids=[params.local_rank], output_device=params.local_rank, broadcast_buffers=True)
-                bridge = nn.parallel.DistributedDataParallel(bridge, device_ids=[params.local_rank], output_device=params.local_rank, broadcast_buffers=True)
+                if params.bridge_steps:
+                    bridge = nn.parallel.DistributedDataParallel(bridge, device_ids=[params.local_rank], output_device=params.local_rank, broadcast_buffers=True)
             else:
                 encoder = nn.parallel.DistributedDataParallel(encoder, device_ids=[params.local_rank], output_device=params.local_rank, broadcast_buffers=True)
                 decoder = nn.parallel.DistributedDataParallel(decoder, device_ids=[params.local_rank], output_device=params.local_rank, broadcast_buffers=True)
@@ -330,7 +343,6 @@ def main(params):
     # set sampling probabilities for training
     set_sampling_probs(data, params)
 
-    fix_enc_steps = 0
     # language model training
     for epoch in range(params.max_epoch):
 
@@ -338,18 +350,10 @@ def main(params):
 
         trainer.n_sentences = 0
 
-        if epoch == 1:
+        if params.fix_enc_epoch <= epoch : # hard code: encoder should be fixed before bridge is trained well.
             params.fix_enc = False
 
-
         while trainer.n_sentences < trainer.epoch_size:
-
-            #if params.fix_enc_steps != -1 and fix_enc_steps > params.fix_enc_steps:
-            # mt_steps = [(lang1,lang2) for lang1,lang2 in params.mt_steps if "{}-{}".format(lang1,lang2)  not in params.zero_shot]
-            # #invariant steps
-            # for (lang1, lang2), (lang3,lang4) in zip(shuf_order(params.invar_steps, params),shuf_order(mt_steps, params)):
-            #     loss1 = trainer.mt_step(lang3, lang4, params.lambda_mt, backward=False)
-            #     trainer.invar_step(lang1, lang2, params.lambda_invar, backward=True, loss_=loss1)
 
             # CLM steps
             for lang1, lang2 in shuf_order(params.clm_steps, params):
@@ -379,12 +383,10 @@ def main(params):
             for lang1, lang2 in shuf_order(params.bridge_steps, params):
                 trainer.bridge_step(lang1, lang2, params.lambda_bridge)
 
-
             # back-translation steps
             for lang1, lang2, lang3 in shuf_order(params.bt_steps):
                 trainer.bt_step(lang1, lang2, lang3, params.lambda_bt)
 
-            fix_enc_steps += params.batch_size
             trainer.iter()
 
         logger.info("============ End of epoch %i ============" % trainer.epoch)

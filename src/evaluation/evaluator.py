@@ -572,9 +572,6 @@ class EncDecEvaluator(Evaluator):
             # cuda
             x1, len1, langs1, x2, len2, langs2, y = to_cuda(x1, len1, langs1, x2, len2, langs2, y)
 
-            if params.enc_special:
-                pass
-                #assert params.lang_specid[lang2] >= 6
 
             if params.dec_special:
                 x2[0] =  params.lang_specid[lang2]
@@ -641,8 +638,8 @@ def convert_to_text(batch, lengths, dico, params):
 
     slen, bs = batch.shape
     assert lengths.max() == slen and lengths.shape[0] == bs
-    assert (batch[0] == params.eos_index).sum() == bs
-    assert (batch == params.eos_index).sum() == 2 * bs
+    #assert (batch[0] == params.eos_index).sum() == bs
+    #assert (batch == params.eos_index).sum() == 2 * bs
     sentences = []
 
     for j in range(bs):
