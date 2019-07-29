@@ -216,6 +216,9 @@ def load_para_data(params, data):
             elif (src,tgt) in params.invar_steps or (src,tgt) in params.mass_steps or (src,tgt) in params.bridge_steps or (src,tgt) in params.mlm_steps:
                 set_dico_parameters(params, data, src_data['dico'], 'src')
                 set_dico_parameters(params, data, src_data['dico'], 'src')
+            else:
+                set_dico_parameters(params, data, src_data['dico'], 'tgt')
+                set_dico_parameters(params, data, tgt_data['dico'], 'src')
 
             # create ParallelDataset
             dataset = ParallelDataset(
@@ -231,7 +234,7 @@ def load_para_data(params, data):
 
             # for validation and test set, enumerate sentence per sentence
             if splt != 'train':
-                dataset.tokens_per_batch = -1
+                dataset.tokens_per_batch = 1400
 
             # if there are several processes on the same machine, we can split the dataset
             if splt == 'train' and params.n_gpu_per_node > 1 and params.split_data:

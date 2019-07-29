@@ -283,7 +283,7 @@ class Evaluator(object):
         n_translates = 0
         cosine = [[] for _ in range(model.n_layers)]
         for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None)):
-
+            pre = None
             # batch
             if lang2 is None:
                 x, lengths = batch
@@ -318,9 +318,10 @@ class Evaluator(object):
                 tensor2 = model('fwd', x=sent2, lengths=len2, positions=None, langs=langs2, causal=False)
 
                 for layer in range(model.n_layers):
-                    f1 = tensor1[layer][0]     # bsz x dim
-                    f2 = tensor2[layer][0]
+                    f1 = tensor1[layer].max(dim=0)[0]     # bsz x dim
+                    f2 = tensor2[layer].max(dim=0)[0]
                     assert f1.size(0) == sent1.size(1) ,"{} {}".format(f1.size(),sent1.size())
+                    
                     cos = nn.CosineSimilarity()
                     distance = cos(f1, f2).sum().item()
                     cosine[layer].append(distance)
@@ -337,22 +338,15 @@ class Evaluator(object):
         scores[acc_name] = 100. * n_valid / n_words if n_words > 0 else 0.
 
    
-    def mask_word(self, w):
-        """
-        80% time for mask, 10% time for random word, 10% time for self 
-        or
-        80% time for mask, 15% time for random word, 5% time for self ? 
-        """
-        p = np.random.random()
+    def mask_word(self, w, rng):
+        
+        p = rng.random_sample()
         if p >= 0.2:
             k = self.params.mask_index
-            #assert k!=1
         elif p >= 0.05:
-            k = np.random.randint(14,self.params.n_words['src'])
-            #assert k!=1
+            k = rng.randint(14,self.params.n_words['src'])
         else:
             k = w
-            #assert k!=1
         return k
 
     def mask_block(self, x, len1):
@@ -367,30 +361,30 @@ class Evaluator(object):
             length = len1[i].item() - 2
             assert length >= 1
 
-            start = self.random_start(length)#random.randint(1,length)
+            start = self.random_start(length,rng)#random.randint(1,length)
             end = start + int(params.block_size * length) 
             end =  length if end > length else end 
         
             if start == end:
                 pred_mask[start,i] = 1
-                x_[start,i] = self.mask_word(x[start,i].item())
+                x_[start,i] = self.mask_word(x[start,i].item(), rng)
             for j in range(start, end):
                 pred_mask[j,i] = 1
-                x_[j,i] = self.mask_word(x[j,i].item())
+                x_[j,i] = self.mask_word(x[j,i].item(),rng)
 
         _x_real = x[pred_mask] 
 
         assert  (x==params.eos_index).long().sum().item() == 2 * bs , x #"{} {}".format((x==params.eos_index).long().sum().item() ,2*bs)
         return x_ , _x_real, pred_mask
     
-    def random_start(self,length):
-        p = np.random.random()
+    def random_start(self,length,rng):
+        p = rng.random_sample()
         if p >= 0.8:
             return 1
         elif p> 0.6:
             return length
         else:
-            return np.random.randint(1, length+1)
+            return rng.randint(1, length+1)
 
 
     def evaluate_bridge(self, scores, data_set, lang1, lang2):
@@ -424,8 +418,13 @@ class Evaluator(object):
                 
             langs1 = x1.clone().fill_(lang1_id)
             langs2 = x2.clone().fill_(lang2_id)
+            
             rng = np.random.RandomState(0)
-            x2, y2, pred_mask = self.mask_out(x2, len2, rng=rng)
+            if params.bridge_type == 'block':
+                x2, y2, pred_mask = self.mask_block(x2,len2,rng=rng)
+            else:
+                x2, y2, pred_mask = self.mask_out(x2, len2, rng=rng)
+
             x1, pred_mask, len1, x2, y2,len2, langs1, langs2 = to_cuda(x1, pred_mask, len1, x2, y2,len2, langs1, langs2)
 
             src_enc = model('fwd',x=x1, lengths=len1,positions=None, langs=langs1, causal=False)[-1]

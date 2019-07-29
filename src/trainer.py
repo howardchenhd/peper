@@ -476,7 +476,7 @@ class Trainer(object):
             length = len1[i].item() - 2
             assert length >= 1
 
-            start = self.random_start(length)#random.randint(1,length)
+            start = self.random_start(length)
             end = start + int(params.block_size * length) 
             end =  length if end > length else end 
         
@@ -721,7 +721,11 @@ class Trainer(object):
         langs1 = x1.clone().fill_(lang1_id)
         langs2 = x2.clone().fill_(lang2_id)
 
-        x2, y2, pred_mask = self.mask_out(x2, len2)
+        if params.bridge_type == 'block':
+            x2, y2, pred_mask = self.mask_block(x2, len2)
+        else:
+            x2, y2, pred_mask = self.mask_out(x2, len2)
+
         x1, pred_mask, len1, x2, y2,len2, langs1, langs2 = to_cuda(x1, pred_mask, len1, x2, y2,len2, langs1, langs2)
 
         src_enc = model('fwd',x=x1, lengths=len1,positions=None, langs=langs1, causal=False)[-1]
@@ -729,7 +733,7 @@ class Trainer(object):
         tgt_enc = model('fwd',x=x2, lengths=len2,positions=None, langs=langs2, causal=False)[-1]
         tgt_enc = tgt_enc.transpose(0,1)
 
-        # Information fusion between src_enc and tgt_
+        # Information fusion between src_enc and tgt_enc
         tensor = bridge(src_enc, tgt_enc, x1, x2, len1, len2)
         tensor = tensor.transpose(0,1)
         _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y2, get_scores=False)
@@ -939,11 +943,7 @@ class EncDecTrainer(Trainer):
         else:
             (x1, len1), (x2, len2) = self.get_batch('mt', lang1, lang2)
 
-        if params.enc_special:
-            #x1[0] = lang2_id + 6
-            pass
         if params.dec_special:
-            #logger.warning("Dec_special is not implement!!!")
             x2[0] = params.lang_specid[lang2] 
             assert params.lang_specid[lang2] >= 6
 

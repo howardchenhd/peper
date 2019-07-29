@@ -200,7 +200,7 @@ def build_model(params, dico):
 
         encoder.dico = dico['src']
         decoder.dico = dico['tgt']
-        
+        encoder.pred_layer = None
 
 
         if params.fix_enc_layers != -1:

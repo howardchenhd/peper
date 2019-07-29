@@ -49,8 +49,8 @@ def Embedding(num_embeddings, embedding_dim, padding_idx=None):
 
 def Linear(in_features, out_features, bias=True):
     m = nn.Linear(in_features, out_features, bias)
-    # nn.init.xavier_uniform_(m.weight)
-    # nn.init.constant_(m.bias, 0.)
+    nn.init.xavier_uniform_(m.weight)
+    nn.init.constant_(m.bias, 0.)
     return m
 
 
@@ -321,7 +321,7 @@ class TransformerModel(nn.Module):
         self.n_heads = params.n_heads   # 8 by default
         self.n_layers = params.dec_layers if self.is_decoder else params.enc_layers
         self.dropout = params.dropout
-        self.attention_dropout = params.enc_attention_dropout if params.is_encoder else params.dec_attention_dropout
+        self.attention_dropout = params.enc_attention_dropout if self.is_encoder else params.dec_attention_dropout
         assert self.dim % self.n_heads == 0, 'transformer dim must be a multiple of n_heads'
 
         # embeddings
@@ -372,7 +372,7 @@ class TransformerModel(nn.Module):
         else:
             raise Exception("Unknown mode: %s" % mode)
 
-    def fwd(self, x, lengths, causal, src_enc=None, src_len=None, positions=None, langs=None, cache=None):
+    def fwd(self, x, lengths, causal, src_enc=None, src_len=None, positions=None, langs=None, cache=None, return_all_info=False):
         """
         Inputs:
             `x` LongTensor(slen, bs), containing word indices
@@ -475,6 +475,10 @@ class TransformerModel(nn.Module):
         
         if self.is_encoder:
             return  all_layer_info
+        
+        if return_all_info:
+            return all_layer_info
+
         return tensor
 
     def predict(self, tensor, pred_mask, y, get_scores, mean=True):
@@ -519,7 +523,6 @@ class TransformerModel(nn.Module):
         if self.dec_special:
             lang = self.id2lang[tgt_lang_id]
             generated[0].fill_(self.params.lang_specid[lang])
-
         # positions
         positions = src_len.new(max_len).long()
         positions = torch.arange(max_len, out=positions).unsqueeze(1).expand(max_len, bs)
@@ -576,7 +579,6 @@ class TransformerModel(nn.Module):
             generated[-1].masked_fill_(unfinished_sents.byte(), self.eos_index)
 
         # sanity check
-        assert (generated == self.eos_index).sum() == 2 * bs
 
         return generated[:cur_len], gen_len
 
@@ -616,6 +618,7 @@ class TransformerModel(nn.Module):
         generated.fill_(self.pad_index)                   # fill upcoming ouput with <PAD>
         generated[0].fill_(self.eos_index)                # we use <EOS> for <BOS> everywhere
 
+  
         if self.dec_special:
             lang = self.id2lang[tgt_lang_id]
             generated[0].fill_(self.params.lang_specid[lang])
@@ -756,7 +759,7 @@ class TransformerModel(nn.Module):
             decoded[tgt_len[i] - 1, i] = self.eos_index
 
         # sanity check
-        assert (decoded == self.eos_index).sum() == 2 * bs
+        #assert (decoded == self.eos_index).sum() == 2 * bs
 
         return decoded, tgt_len
 
