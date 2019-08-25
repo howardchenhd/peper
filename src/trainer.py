@@ -89,8 +89,6 @@ class Trainer(object):
             [('AE-%s' % lang, []) for lang in params.ae_steps] +
             [('MT-%s-%s' % (l1, l2), []) for l1, l2 in params.mt_steps] +
             [('BT-%s-%s-%s' % (l1, l2, l3), []) for l1, l2, l3 in params.bt_steps] +
-            [('MA-%s-%s' % (l1, l2), []) for l1, l2 in params.mass_steps] +
-            [('INVAR-%s-%s' % (l1, l2), []) for l1, l2 in params.invar_steps] + 
             [('BRIDGE-%s-%s' % (l1, l2), []) for l1, l2 in params.bridge_steps] +
             [('ALIGN-%s-%s' % (l1, l2), []) for l1, l2 in params.align_steps] + 
             [('AMLM-%s' % l1, []) for l1, l2 in params.align_steps]

@@ -248,16 +248,17 @@ def get_parser():
     parser.add_argument("--add_pred", type=bool_flag, default=False)
     return parser
 
-def my_check(params):
-    assert params.fix_enc_epoch == -1 or params.fix_enc_epoch >=1
-    if params.fix_enc_epoch >=1:
-        assert params.fix_enc
+
+def monkey_params(params):
+
+    assert (params.dec_special == True and params.lang_specid != "") or  params.dec_special == False
     if params.lang_specid != "":
         params.lang_specid = { em.split(":")[0] : int(em.split(":")[1]) for em in params.lang_specid.split(',')}
 
+
 def main(params):
 
-    my_check(params)
+    monkey_params(params)
     reset_lang(params)
 
     # initialize the multi-GPU / multi-node training
@@ -348,9 +349,6 @@ def main(params):
             for lang1, lang2 in shuf_order(params.mlm_steps, params):
                 trainer.mlm_step(lang1, lang2, params.lambda_mlm)
 
-            # # MASS steps
-            for lang1, lang2 in shuf_order(params.mass_steps, params):
-                trainer.mass_step(lang1, lang2, params.lambda_mass)
 
             # parallel classification steps
             for lang1, lang2 in shuf_order(params.pc_steps, params):
@@ -361,7 +359,7 @@ def main(params):
                 trainer.mt_step(lang, lang, params.lambda_ae)
 
             # machine translation steps
-            for (lang1, lang2) in params.mt_steps:
+            for (lang1, lang2) in shuf_order(params.mt_steps,params):
                 if "{}-{}".format(lang1,lang2) not in params.zero_shot:
                     trainer.mt_step(lang1, lang2, params.lambda_mt)
         

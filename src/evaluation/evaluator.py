@@ -188,9 +188,6 @@ class Evaluator(object):
                     self.evaluate_mlm(scores, data_set, lang1, lang2)
 
 
-                for lang1, lang2 in params.mass_steps:
-                    self.evaluate_mass(scores, data_set, lang1, lang2)
-
                 for lang1, lang2 in params.bridge_steps:
                     self.evaluate_bridge(scores, data_set, lang1,lang2)
                 
