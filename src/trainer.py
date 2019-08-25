@@ -91,7 +91,10 @@ class Trainer(object):
             [('BT-%s-%s-%s' % (l1, l2, l3), []) for l1, l2, l3 in params.bt_steps] +
             [('MA-%s-%s' % (l1, l2), []) for l1, l2 in params.mass_steps] +
             [('INVAR-%s-%s' % (l1, l2), []) for l1, l2 in params.invar_steps] + 
-            [('BRIDGE-%s-%s' % (l1, l2), []) for l1, l2 in params.bridge_steps]
+            [('BRIDGE-%s-%s' % (l1, l2), []) for l1, l2 in params.bridge_steps] +
+            [('ALIGN-%s-%s' % (l1, l2), []) for l1, l2 in params.align_steps] + 
+            [('AMLM-%s' % l1, []) for l1, l2 in params.align_steps]
+
         )
         self.last_time = time.time()
 
@@ -113,36 +116,40 @@ class Trainer(object):
             optimizer = FP16_Optimizer(optimizer, dynamic_loss_scale=True)
         return optimizer
 
-    def optimize(self, loss, modules):
+    def optimize(self, loss_, modules):
         """
         Optimize.
         """
         if type(modules) is str:
             modules = [modules]
-
-        # check NaN
-        if (loss != loss).data.any():
-            logger.error("NaN detected")
-            exit()
-
         # zero grad
         for module in modules:
             self.optimizers[module].zero_grad()
 
-        # backward
-        if self.params.fp16:
-            assert len(modules) == 1, "fp16 not implemented for more than one module"
-            self.optimizers[module].backward(loss)
-        else:
-            loss.backward()
+        for loss in loss_:
+            
 
-        # clip gradients
-        if self.params.clip_grad_norm > 0:
-            for module in modules:
-                if self.params.fp16:
-                    self.optimizers[module].clip_master_grads(self.params.clip_grad_norm)
-                else:
-                    clip_grad_norm_(getattr(self, module).parameters(), self.params.clip_grad_norm)
+
+            # check NaN
+            if (loss != loss).data.any():
+                logger.error("NaN detected")
+                exit()
+
+
+            # backward
+            if self.params.fp16:
+                assert len(modules) == 1, "fp16 not implemented for more than one module"
+                self.optimizers[module].backward(loss)
+            else:
+                loss.backward()
+
+            # clip gradients
+            if self.params.clip_grad_norm > 0:
+                for module in modules:
+                    if self.params.fp16:
+                        self.optimizers[module].clip_master_grads(self.params.clip_grad_norm)
+                    else:
+                        clip_grad_norm_(getattr(self, module).parameters(), self.params.clip_grad_norm)
 
         # optimization step
         for module in modules:
@@ -205,6 +212,16 @@ class Trainer(object):
                     group_by_size=self.params.group_by_size,
                     n_sentences=-1,
                 )
+        elif iter_name == 'backward' or iter_name == 'forward':
+
+            assert stream is False
+            _lang1, _lang2 = (lang1, lang2) if lang1 < lang2 else (lang2, lang1)
+            iterator = self.data[iter_name][(_lang1, _lang2)]['train'].get_iterator(
+                shuffle=True,
+                group_by_size=self.params.group_by_size,
+                n_sentences=-1,
+            )
+            
         else:
             assert stream is False
             _lang1, _lang2 = (lang1, lang2) if lang1 < lang2 else (lang2, lang1)
@@ -225,6 +242,7 @@ class Trainer(object):
         """
         Return a batch of sentences from a dataset.
         """
+
         assert lang1 in self.params.langs
         assert lang2 is None or lang2 in self.params.langs
         assert stream is False or lang2 is None
@@ -405,45 +423,6 @@ class Trainer(object):
 
         return x, lengths, positions, langs, (None, None) if lang2 is None else (len1, len2)
 
-
-    def generate_batch_with_src_mask(self, lang1, lang2, name, type='shuffle'):
-        """
-        Prepare a batch (for causal or non-causal mode).
-
-        type: 'shuffle' 'fill' 'block'
-        """
-        params = self.params
-        assert lang1 and lang2
-        assert type in ['shuffle' , 'fill' ,'block']
-
-        lang1_id = params.lang2id[lang1]
-        lang2_id = params.lang2id[lang2]
-
-        (x1, len1), (x2, len2) = self.get_batch(name, lang1, lang2)
-
-        if type == 'fill':
-            x1, y1, pred_mask = self.mask_out(x1, len1)
-
-        elif type == 'block':
-            x1, y1, pred_mask = self.mask_block(x1, len1)
-
-        elif type == 'shuffle':
-            x1, len1 = self.add_noise(x1, len1)
-            alen = torch.arange(len1.max(), dtype=torch.long, device=len2.device)
-            pred_mask = alen[:, None] < len1[None] - 1  # do not predict anything given the last target word
-            y1 = x1[1:].masked_select(pred_mask[:-1])
-
-
-        max_len = (len1 + len2).max().item()
-        bsz = x1.size(1)
-
-        real_pred_mask = pred_mask.new(max_len, bsz).fill_(0)
-        real_pred_mask[:len1.max(), :].copy_(pred_mask)
-        # pdb.set_trace()
-        x, lengths, positions, langs = concat_batches(x1, len1, lang1_id, x2, len2, lang2_id, params.pad_index,
-                                                      params.eos_index, reset_positions=True)
-        assert real_pred_mask.size() == x.size()
-        return x, lengths, positions, langs, y1, real_pred_mask
 
 
     def mask_word(self, w):
@@ -696,7 +675,7 @@ class Trainer(object):
         loss = lambda_coeff * loss
 
         # optimize
-        self.optimize(loss, name)
+        self.optimize([loss], name)
 
         # number of processed sentences / words
         self.n_sentences += params.batch_size
@@ -737,14 +716,23 @@ class Trainer(object):
         tensor = bridge(src_enc, tgt_enc, x1, x2, len1, len2)
         tensor = tensor.transpose(0,1)
         _, loss = model('predict', tensor=tensor, pred_mask=pred_mask, y=y2, get_scores=False)
+
+        if params.multi_bridge:
+            _, loss_multi = model('predict', tensor=tgt_enc.transpose(0,1), pred_mask=pred_mask, y=y2, get_scores=False)
+            loss_multi = lambda_coeff * loss_multi 
+            loss = loss +loss_multi
+
+        self.stats[('BRIDGE-%s-%s' % (lang1, lang2))].append(loss.item() if not params.multi_bridge else loss.item()/2)
         
-        self.stats[('BRIDGE-%s-%s' % (lang1, lang2))].append(loss.item())
         loss = lambda_coeff * loss
 
         if params.fix_enc:
             module.remove('model')
         # optimize
-        self.optimize(loss, module)
+        if params.multi_bridge:
+            self.optimize([loss], module)
+        else:
+            self.optimize([loss], module)
 
         # number of processed sentences / words
         self.n_sentences += params.batch_size
@@ -780,14 +768,64 @@ class Trainer(object):
         loss = lambda_coeff * loss
 
         # optimize
-        self.optimize(loss, name)
+        self.optimize([loss], name)
 
         # number of processed sentences / words
         self.n_sentences += params.batch_size
         self.stats['processed_s'] += lengths.size(0)
         self.stats['processed_w'] += pred_mask.sum().item()
 
-    def mass_step(self, lang1, lang2, lambda_coeff):
+
+    def mask_out_for_align(self, x, y,lengths):
+        """
+        Decide of random words to mask out, and what target they get assigned.
+        """
+        params = self.params
+        slen, bs = x.size()
+
+        # define target words to predict
+        if params.sample_alpha == 0:
+            pred_mask = np.random.rand(slen, bs) <= params.word_pred
+            pred_mask = torch.from_numpy(pred_mask.astype(np.uint8))
+
+        # do not predict padding
+        pred_mask[x == params.pad_index] = 0
+
+        # do not predict unk
+        pred_mask[ y == params.unk_index] = 0
+
+        # ensure at least one token bs predicted
+        if len(x[pred_mask]) == 0:
+            pred_mask[x == params.eos_index] = 1
+
+        # mask a number of words == 0 [8] (faster with fp16)
+        if params.fp16:
+            pred_mask = pred_mask.view(-1)
+            n1 = pred_mask.sum().item()
+            n2 = max(n1 % 8, 8 * (n1 // 8))
+            if n2 != n1:
+                pred_mask[torch.nonzero(pred_mask).view(-1)[:n1 - n2]] = 0
+            pred_mask = pred_mask.view(slen, bs)
+            assert pred_mask.sum().item() % 8 == 0
+
+        # generate possible targets / update x input
+        _x_real = x[pred_mask]
+        _x_rand = _x_real.clone().random_(params.n_words['src'])
+        _x_mask = _x_real.clone().fill_(params.mask_index)
+        probs = torch.multinomial(params.pred_probs, len(_x_real), replacement=True)
+        _x = _x_mask * (probs == 0).long() + _x_real * (probs == 1).long() + _x_rand * (probs == 2).long()
+        x = x.masked_scatter(pred_mask, _x)
+
+        assert 0 <= x.min() <= x.max() < params.n_words['src']
+        assert x.size() == (slen, bs)
+        assert pred_mask.size() == (slen, bs)
+        
+        _y_real = y[pred_mask]
+        return x, _x_real, _y_real, pred_mask
+
+
+
+    def align_step(self, lang1, lang2, direction, lambda_coeff):
         """
         Masked word prediction step.
         MLM objective is lang2 is None, TLM objective otherwise.
@@ -800,25 +838,39 @@ class Trainer(object):
         model = getattr(self, name)
         model.train()
 
-        # generate batch / select words to predict
-        x, lengths, positions, langs, y, pred_mask = self.generate_batch_with_src_mask(lang1, lang2, 'pred', type= params.mass_type)
+        lang1_id = params.lang2id[lang1]
+        lang2_id = params.lang2id[lang2]
 
+        (x1, len1), (x2, len2) = self.get_batch(direction, lang1, lang2)
+        assert all(len1 == len2)
+
+        langs = x1.clone().fill_(lang1_id)
+
+
+        x, y, y2, pred_mask = self.mask_out_for_align(x1.clone(), x2.clone(), len1) # 抽取出 x1 x2 被mask 同一位置的词
         # cuda
-        x, y, pred_mask, lengths, positions, langs = to_cuda(x, y, pred_mask, lengths, positions, langs)
-
+        x, y, y2,pred_mask, lengths, langs,x1 = to_cuda(x, y, y2, pred_mask, len1, langs, x1)
         # forward / loss
-        tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
-        _, loss = model('predict', tensor=tensor[-1], pred_mask=pred_mask, y=y, get_scores=False)
-        self.stats[('MA-%s-%s' % (lang1, lang2))].append(loss.item())
-        loss = lambda_coeff * loss
+        tensor = model('fwd', x=x, lengths=lengths, langs=langs, causal=False) 
+        _, loss1 = model('predict', tensor=tensor[-1], pred_mask=pred_mask, y=y, get_scores=False)
+
+
+        tensor = model('fwd', x=x1, lengths=lengths, langs=langs, causal=False)
+        _, loss2 = model('predict', tensor=tensor[-1], pred_mask=pred_mask, y=y2, get_scores=False,use_addlayer=True)
 
         # optimize
-        self.optimize(loss, name)
+        self.optimize([loss2+loss1], name)
+
+        self.stats[('AMLM-%s' % lang1)].append(loss1.item())
+        self.stats[('ALIGN-%s-%s' % (lang1, lang2))].append(loss2.item())
+
 
         # number of processed sentences / words
         self.n_sentences += params.batch_size
         self.stats['processed_s'] += lengths.size(0)
         self.stats['processed_w'] += pred_mask.sum().item()
+
+
 
     def pc_step(self, lang1, lang2, lambda_coeff):
         """
@@ -868,7 +920,7 @@ class Trainer(object):
         loss = lambda_coeff * loss
 
         # optimize
-        self.optimize(loss, name)
+        self.optimize([loss], name)
 
         # number of processed sentences / words
         self.n_sentences += params.batch_size
@@ -975,116 +1027,15 @@ class EncDecTrainer(Trainer):
         if backward:
             # optimize
             if self.params.fix_enc:
-                self.optimize(loss, ['decoder'])
+                self.optimize([loss], ['decoder'])
             else:
-                self.optimize(loss, ['encoder','decoder'])
+                self.optimize([loss], ['encoder','decoder'])
             # number of processed sentences / words
             
         self.n_sentences += params.batch_size
         self.stats['processed_s'] += len2.size(0)
         self.stats['processed_w'] += (len2 - 1).sum().item()
         return loss
-
-    def invar_step(self, lang1, lang2, lambda_coeff, backward=True, loss_= 0):
-
-        assert lambda_coeff >= 0
-        if lambda_coeff == 0:
-            return
-        params = self.params
-        self.encoder.train()
-        self.decoder.train()
-
-        assert params.invar_type in ['cosine','selfattn','wordprob']
-        lang1_id = params.lang2id[lang1]
-        lang2_id = params.lang2id[lang2]
-
-        (x1, len1), (x2, len2) = self.get_batch('mt', lang1, lang2)
-        enc1_mask, enc2_mask = (x1 == self.params.pad_index, x2 == self.params.pad_index)
-
-        langs1 = x1.clone().fill_(lang1_id)
-        langs2 = x2.clone().fill_(lang2_id)
-        tgt_id = params.lang2id[params.real_tgtlang]
-
-        # cuda
-        x1, len1, langs1, x2, len2, langs2, enc1_mask, enc2_mask= to_cuda(x1, len1, langs1, x2, len2, langs2, enc1_mask, enc2_mask)
-
-
-        # encode source sentence
-        enc1 = self.encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False) #  sqlen bsz dim
-        enc1 = [enc.transpose(0, 1) for enc in enc1]  # bsz sqlen dim
-
-        # encode target sentence
-        enc2 = self.encoder('fwd', x=x2, lengths=len2, langs=langs2, causal=False)
-        enc2 = [dec.transpose(0, 1) for dec in enc2] 
-
-        if params.invar_type == 'selfattn':
-            bos_batch = x1.new_full((x1.size(1),1), params.eos_index)
-            langid = x1.new_full((x1.size(1),1),tgt_id)
-            bos_embedding = self.decoder.embeddings(bos_batch) + self.decoder.lang_embeddings(langid)# bsz x 1 x dim
-            bos_embedding = bos_embedding.detach()
-            loss =0 
-            
-            enc1_ctx =  self.get_attention(enc1[-1], bos_embedding, enc1_mask)
-            enc2_ctx =  self.get_attention(enc2[-1], bos_embedding, enc2_mask)
-
-            cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-            loss += (1 - cos(enc1_ctx, enc2_ctx)).mean()
-            loss = loss * lambda_coeff
-
-
-
-        elif params.invar_type == 'cosine':
-            loss = 0
-            for layer in range(self.encoder.n_layers):
-                enc1_max_pooling = enc1[layer].max(dim=1)[0] # bsz x dim 
-                enc2_max_polling = enc2[layer].max(dim=1)[0]
-                cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-                loss_layer = (1 - cos(enc1_max_pooling , enc2_max_polling)).mean()
-                loss += loss_layer
-        else :
-            bos_batch = x1.new_full((x1.size(1),1), params.eos_index)
-            langid = x1.new_full((x1.size(1),1),tgt_id).t()
-            loss =0 
-
-        
-            length = x1.new_full((x1.size(1),),1)
-            enc1_ctx = self.decoder('fwd', x=bos_batch.t(), lengths=length, langs=langid, causal=True, src_enc=enc1, src_len=len1)
-            enc2_ctx = self.decoder('fwd', x=bos_batch.t(), lengths=length, langs=langid, causal=True, src_enc=enc2, src_len=len2)
-
-            assert enc1_ctx.size(1) == x1.size(1) and enc1_ctx.size(0) == 1 and enc2_ctx.size(0) == 1
-            enc1_ctx, enc2_ctx = enc1_ctx.transpose(0,1), enc2_ctx.transpose(0,1) # bsz sqlen dim
-
-            cos = nn.CosineSimilarity(dim=1, eps=1e-6)
-            loss += (1 - cos(enc1_ctx, enc2_ctx)).mean()
-            loss = loss * lambda_coeff
-
-        self.stats[ ('INVAR-%s-%s' % (lang1, lang2))].append(loss.item())
-
-        loss = loss + loss_
-
-        if backward:
-            # # optimize
-            if self.params.fix_enc:
-                self.optimize(loss, ['decoder'])
-            else:
-                self.optimize(loss, ['encoder','decoder'])
-        # number of processed sentences / words
-        self.n_sentences += params.batch_size
-        self.stats['processed_s'] += len2.size(0)
-        self.stats['processed_w'] += (len2 - 1).sum().item()
-        return loss
-
-
-    def get_attention(self,query ,k ,mask):
-        """
-        q,k : bsz x sqlen x dim,
-        mask: bsz x sqlen
-        """
-        scores = torch.matmul(query, k.transpose(1,2)).squeeze(-1)                 # bs x sqlen
-        scores.masked_fill_(mask.t(),-float('inf'))                                # bs x sqlen
-        scores = F.softmax(scores, dim=-1).unsqueeze(-1).expand_as(query)          # bs x sqlen
-        cxt = (scores * query).sum(1)                                              # bs x dim
-        return cxt
 
 
     def bt_step(self, lang1, lang2, lang3, lambda_coeff):
@@ -1103,7 +1054,8 @@ class EncDecTrainer(Trainer):
         lang2_id = params.lang2id[lang2]
 
         # generate source batch
-        x1, len1 = self.get_batch('bt', lang1)
+        #x1, len1 = self.get_batch('bt', lang1)
+        (x1, len1), (_, _) = self.get_batch('mt', lang1, 'en')
         langs1 = x1.clone().fill_(lang1_id)
 
         # cuda
@@ -1118,7 +1070,8 @@ class EncDecTrainer(Trainer):
 
             # encode source sentence and translate it
             enc1 = _encoder('fwd', x=x1, lengths=len1, langs=langs1, causal=False)
-            enc1 = enc1.transpose(0, 1)
+            enc1 = [enc.transpose(0, 1) for enc in enc1]#enc1.transpose(0, 1)
+
             x2, len2 = _decoder.generate(enc1, len1, lang2_id, max_len=int(1.3 * len1.max().item() + 5))
             langs2 = x2.clone().fill_(lang2_id)
 
@@ -1131,7 +1084,7 @@ class EncDecTrainer(Trainer):
 
         # encode generate sentence
         enc2 = self.encoder('fwd', x=x2, lengths=len2, langs=langs2, causal=False)
-        enc2 = enc2.transpose(0, 1)
+        enc2 = [enc.transpose(0, 1) for enc in enc2]#enc1.transpose(0, 1)
 
         # words to predict
         alen = torch.arange(len1.max(), dtype=torch.long, device=len1.device)
@@ -1148,7 +1101,7 @@ class EncDecTrainer(Trainer):
         self.stats[('BT-%s-%s-%s' % (lang1, lang2, lang3))].append(loss.item())
 
         # optimize
-        self.optimize(loss, ['encoder', 'decoder'])
+        self.optimize([loss], ['encoder', 'decoder'])
 
         # number of processed sentences / words
         self.n_sentences += params.batch_size

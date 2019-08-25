@@ -256,7 +256,7 @@ class Bridge(nn.Module):
         self.layer_norm2 = nn.LayerNorm(self.dim, eps=1e-12)
         self.bridge_attn = MultiHeadAttention(self.n_heads, self.dim, dropout=self.attention_dropout)
         self.ffns = TransformerFFN(self.dim, self.hidden_dim, self.dim, dropout=self.dropout, gelu_activation=params.gelu_activation)
-
+        self.residual = params.bridge_residual
 
     def forward(self, src_enc, tgt_enc, x, y, len1, len2):
         src_len, bs = x.size()
@@ -267,11 +267,16 @@ class Bridge(nn.Module):
 
         attn = self.bridge_attn(tgt_enc, src_mask, kv=src_enc, cache=None)
         attn = F.dropout(attn, p=self.dropout, training=self.training)
-        tgt_enc = tgt_enc + attn
-        tgt_enc = self.layer_norm1(tgt_enc)
+        
+        if self.residual:
+            tgt_enc = tgt_enc + attn
+            tgt_enc = self.layer_norm1(tgt_enc)
+            tgt_enc = tgt_enc + self.ffns(tgt_enc)
+            tgt_enc = self.layer_norm2(tgt_enc)
+        else:
+            tgt_enc = self.ffns(attn)
+            tgt_enc = self.layer_norm2(tgt_enc)
 
-        tgt_enc = tgt_enc + self.ffns(tgt_enc)
-        tgt_enc = self.layer_norm2(tgt_enc)
         tgt_enc *= tgt_mask.unsqueeze(-1).to(tgt_enc.dtype)
         return tgt_enc
 
@@ -357,6 +362,10 @@ class TransformerModel(nn.Module):
         # output layer
         if self.with_output:
             self.pred_layer = PredLayer(params, self.is_encoder)
+            
+            if params.add_pred:
+                self.pred_layer1 = PredLayer(params, self.is_encoder)
+
             if params.share_inout_emb:
                 self.pred_layer.proj.weight = self.embeddings.weight
 
@@ -465,7 +474,7 @@ class TransformerModel(nn.Module):
             tensor *= mask.unsqueeze(-1).to(tensor.dtype)
 
             all_layer_info.append(tensor.transpose(0,1)) # sqlen bsz
-
+        
         # update cache length
         if cache is not None:
             cache['slen'] += tensor.size(1)
@@ -481,7 +490,7 @@ class TransformerModel(nn.Module):
 
         return tensor
 
-    def predict(self, tensor, pred_mask, y, get_scores, mean=True):
+    def predict(self, tensor, pred_mask, y, get_scores, mean=True, use_addlayer=False):
         """
         Given the last hidden state, compute word scores and/or the loss.
             `pred_mask` is a ByteTensor of shape (slen, bs), filled with 1 when
@@ -490,7 +499,10 @@ class TransformerModel(nn.Module):
             `get_scores` is a boolean specifying whether we need to return scores
         """
         masked_tensor = tensor[pred_mask.unsqueeze(-1).expand_as(tensor)].view(-1, self.dim)
-        scores, loss = self.pred_layer(masked_tensor, y, get_scores, mean=mean)
+        if not use_addlayer:
+            scores, loss = self.pred_layer(masked_tensor, y, get_scores, mean=mean)
+        else:
+            scores, loss = self.pred_layer1(masked_tensor, y, get_scores, mean=mean)
         return scores, loss
 
     def generate(self, src_enc, src_len, tgt_lang_id, max_len=200, sample_temperature=None):

@@ -74,11 +74,20 @@ class Evaluator(object):
         else:
             assert stream is False
             _lang1, _lang2 = (lang1, lang2) if lang1 < lang2 else (lang2, lang1)
-            iterator = self.data['para'][(_lang1, _lang2)][data_set].get_iterator(
-                shuffle=False,
-                group_by_size=True,
-                n_sentences=n_sentences
-            )
+            
+            if self.data['forward']:
+                iterator = self.data['forward'][(_lang1, _lang2)][data_set].get_iterator(
+                    shuffle=False,
+                    group_by_size=True,
+                    n_sentences=n_sentences
+                )
+
+            else:
+                iterator = self.data['para'][(_lang1, _lang2)][data_set].get_iterator(
+                    shuffle=False,
+                    group_by_size=False,
+                    n_sentences=n_sentences
+                )
 
         for batch in iterator:
             yield batch if lang2 is None or lang1 < lang2 else batch[::-1]
@@ -90,7 +99,7 @@ class Evaluator(object):
         params = self.params
         params.ref_paths = {}
 
-        for (lang1, lang2) in self.params.mt_steps:
+        for (lang1, lang2) in set(params.mt_steps + [(l2, l3) for _, l2, l3 in params.bt_steps]):
             
             #assert lang1 < lang2
             k = tuple(sorted([lang1, lang2]))
@@ -176,20 +185,23 @@ class Evaluator(object):
 
                 # prediction task (evaluate perplexity and accuracy)
                 for lang1, lang2 in params.mlm_steps:
-                    print(lang1,lang2)
                     self.evaluate_mlm(scores, data_set, lang1, lang2)
+
 
                 for lang1, lang2 in params.mass_steps:
                     self.evaluate_mass(scores, data_set, lang1, lang2)
 
                 for lang1, lang2 in params.bridge_steps:
                     self.evaluate_bridge(scores, data_set, lang1,lang2)
-
+                
+                for lang1, lang2 in params.align_steps:
+                    self.evaluate_align(scores, data_set, lang1, lang2) #use mlm for align
                 # machine translation task (evaluate perplexity and accuracy)
                 for lang1, lang2 in set(params.mt_steps + [(l2, l3) for _, l2, l3 in params.bt_steps]):
                     eval_bleu = params.eval_bleu and params.is_master
                     self.evaluate_mt(scores, data_set, lang1, lang2, eval_bleu)
-
+                    #if lang1!='en' and lang2!='en':
+                    #    self.evaluate_pivot(scores, data_set, lang1,'en', lang2, eval_bleu)
                 # report average metrics per language
                 _clm_mono = [l1 for (l1, l2) in params.clm_steps if l2 is None]
                 if len(_clm_mono) > 0:
@@ -318,8 +330,11 @@ class Evaluator(object):
                 tensor2 = model('fwd', x=sent2, lengths=len2, positions=None, langs=langs2, causal=False)
 
                 for layer in range(model.n_layers):
-                    f1 = tensor1[layer].max(dim=0)[0]     # bsz x dim
-                    f2 = tensor2[layer].max(dim=0)[0]
+                    # f1 = tensor1[layer].max(dim=0)[0]     # bsz x dim
+                    # f2 = tensor2[layer].max(dim=0)[0]
+                    # 
+                    f1 = tensor1[layer][0]     # bsz x dim
+                    f2 = tensor2[layer][0]
                     assert f1.size(0) == sent1.size(1) ,"{} {}".format(f1.size(),sent1.size())
                     
                     cos = nn.CosineSimilarity()
@@ -337,6 +352,60 @@ class Evaluator(object):
         scores[ppl_name] = np.exp(xe_loss / n_words) if n_words > 0 else 1e9
         scores[acc_name] = 100. * n_valid / n_words if n_words > 0 else 0.
 
+
+
+    def evaluate_align(self, scores, data_set, lang1, lang2):
+            """
+            Evaluate perplexity and next word prediction accuracy.
+            """
+            params = self.params
+            print(data_set)
+            assert data_set in ['valid', 'test']
+            assert lang1 in params.langs
+            assert lang2 in params.langs or lang2 is None
+
+            model = self.model if params.encoder_only else self.encoder
+            model.eval()
+            model = model.module if params.multi_gpu else model
+
+            rng = np.random.RandomState(0)
+
+            lang1_id = params.lang2id[lang1]
+            lang2_id = params.lang2id[lang2] if lang2 is not None else None
+
+            n_words = 0
+            xe_loss = 0
+            n_valid = 0
+
+            n_translates = 0
+            cosine = [[] for _ in range(model.n_layers)]
+            for batch in self.get_iterator(data_set, lang1, lang2, stream=(lang2 is None)):
+                pre = None
+                # batch
+                (x, lengths), (_, _) = batch
+                positions = None
+                langs = x.clone().fill_(lang1_id) if params.n_langs > 1 else None
+
+                # words to predict
+                x, y, pred_mask = self.mask_out(x, lengths, rng)
+
+                # cuda
+                x, y, pred_mask, lengths, positions, langs = to_cuda(x, y, pred_mask, lengths, positions, langs)
+
+                # forward / loss
+                tensor = model('fwd', x=x, lengths=lengths, positions=positions, langs=langs, causal=False)
+                word_scores, loss = model('predict', tensor=tensor[-1], pred_mask=pred_mask, y=y, get_scores=True)
+
+                # update stats
+                n_words += len(y)
+                xe_loss += loss.item() * len(y)
+                n_valid += (word_scores.max(1)[1] == y).sum().item()
+
+            # compute perplexity and prediction accuracy
+            ppl_name = '%s_%s_mlm_ppl' % (data_set, lang1) 
+            acc_name = '%s_%s_mlm_acc' % (data_set, lang1) 
+            scores[ppl_name] = np.exp(xe_loss / n_words) if n_words > 0 else 1e9
+            scores[acc_name] = 100. * n_valid / n_words if n_words > 0 else 0.
    
     def mask_word(self, w, rng):
         
@@ -446,6 +515,76 @@ class Evaluator(object):
         scores[ppl_name] = np.exp(xe_loss / n_words) if n_words > 0 else 1e9
         scores[acc_name] = 100. * n_valid / n_words if n_words > 0 else 0.
  
+    def evaluate_pivot(self, scores, data_set, lang1, lang2, lang3, eval_bleu):
+        """
+        Evaluate perplexity and next word prediction accuracy.
+        """
+        params = self.params
+        assert data_set in ['valid', 'test']
+        assert lang1 in params.langs
+        assert lang2 in params.langs
+        assert lang3 in params.langs
+
+        self.encoder.eval()
+        self.decoder.eval()
+        encoder = self.encoder.module if params.multi_gpu else self.encoder
+        decoder = self.decoder.module if params.multi_gpu else self.decoder
+
+        params = params
+        lang1_id = params.lang2id[lang1]
+        lang2_id = params.lang2id[lang2]
+        lang3_id = params.lang2id[lang3]
+
+        n_words = 0
+        xe_loss = 0
+        n_valid = 0
+
+        # store hypothesis to compute BLEU score
+        if eval_bleu:
+            hypothesis = []
+        
+        with torch.no_grad():
+            for batch in self.get_iterator(data_set, lang1, lang2):
+
+                # generate batch
+                (x1, len1), (_, _) = batch
+                langs1 = x1.clone().fill_(lang1_id)
+
+                # encode source sentence
+                enc1 = encoder('fwd', x=x1.cuda(), lengths=len1.cuda(), langs=langs1.cuda(), causal=False)
+                enc1 = [enc.transpose(0, 1) for enc in enc1]#enc1.transpose(0, 1)
+
+
+                # generate translation - translate / convert to text
+                if eval_bleu:
+                    max_len = int(1.5 * len1.max().item() + 10)
+                    x2, len2 = decoder.generate(enc1, len1.cuda(), lang2_id, max_len=max_len)
+                    langs2 = x2.clone().fill_(lang2_id)
+
+                    enc2 = encoder('fwd', x=x2, lengths=len2.cuda(), langs=langs2.cuda(), causal=False)
+                    enc2 = [enc.transpose(0, 1) for enc in enc2]#enc1.transpose(0, 1)
+                    x3, len3 = decoder.generate(enc2, len2.cuda(), lang3_id, max_len=max_len)
+
+                    hypothesis.extend(convert_to_text(x3, len3, self.dico['tgt'], params))
+
+
+        # compute BLEU
+        if eval_bleu:
+
+            # hypothesis / reference paths
+            hyp_name = 'hyp{0}.{1}-{2}.{3}.txt'.format(scores['epoch'], lang1, lang3, data_set)
+            hyp_path = os.path.join(params.hyp_path, hyp_name)
+            ref_path = params.ref_paths[(lang1, lang3, data_set)]
+
+            # export sentences to hypothesis file / restore BPE segmentation
+            with open(hyp_path, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(hypothesis) + '\n')
+            restore_segmentation(hyp_path)
+
+            # evaluate BLEU score
+            bleu = eval_moses_bleu(ref_path, hyp_path)
+            logger.info("BLEU %s %s : %f" % (hyp_path, ref_path, bleu))
+
 
     def evaluate_mass(self, scores, data_set, lang1, lang2):
         """

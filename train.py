@@ -50,9 +50,9 @@ def get_parser():
                         help="Embedding layer size")
     parser.add_argument("--n_layers", type=int, default=6,
                         help="Number of Transformer layers")
-    parser.add_argument("--enc_layers", type=int, default=0,
+    parser.add_argument("--enc_layers", type=int, default=6,
                         help="Number of Encoder layers, when set to 0, use n_layers")
-    parser.add_argument("--dec_layers", type=int, default=0,
+    parser.add_argument("--dec_layers", type=int, default=6,
                         help="Number of Decoder layers")
 
     parser.add_argument("--n_heads", type=int, default=8,
@@ -163,15 +163,12 @@ def get_parser():
                         help="MT coefficient")
     parser.add_argument("--lambda_bt", type=str, default="1",
                         help="BT coefficient")
-    parser.add_argument("--lambda_mass", type=float, default=1,
-                        help="MASS coefficient")
     
     parser.add_argument("--lambda_bridge", type=float, default=1,
                         help="bridge coefficient")
 
-    parser.add_argument("--lambda_invar", type=float, default=1,
+    parser.add_argument("--lambda_align", type=float, default=1,
                         help="invar coefficient")
-
     # training steps
     parser.add_argument("--clm_steps", type=str, default="",
                         help="Causal prediction steps (CLM)")
@@ -185,23 +182,17 @@ def get_parser():
                         help="Back-translation steps")
     parser.add_argument("--pc_steps", type=str, default="",
                         help="Parallel classification steps")
-    parser.add_argument("--invar_steps", type=str, default="",
-                        help="invariant_steps, train encoder like tlm")
 
-
-    parser.add_argument("--invar_type", type=str, default="",
-                        help="choice:['cosine','selfattn','wordprob']")
-
-    parser.add_argument("--mass_steps", type=str, default="",
-                        help="Mask Block piecess steps")
 
     parser.add_argument("--bridge_steps", type=str, default="",
                         help="bridge steps")
+    parser.add_argument("--align_steps",type=str,default="")
 
-    parser.add_argument("--mass_type", type=str, default="block",
-                        help="choice:['shuffle' , 'fill' ,'block']")
-    parser.add_argument("--block_size", type=float, default=0.5,
-                        help="windows size for mass block type")
+    parser.add_argument("--aligndata_path",type=str,default="")
+    parser.add_argument("--multi_bridge",type=bool_flag, default=False)
+    parser.add_argument("--bridge_residual",type=bool_flag, default=True)
+    parser.add_argument("--bridge_type",type=str,default="shuffle")
+
 
     # reload a pretrained model
     parser.add_argument("--reload_emb", type=str, default="",
@@ -237,39 +228,36 @@ def get_parser():
     
     # freeze parameter
     parser.add_argument("--fix_enc",type=bool_flag, default=False)
-    parser.add_argument("--fix_enc_emb",type=bool_flag, default=False)
     parser.add_argument("--fix_enc_layers",type=int, default=-1)
-    parser.add_argument("--fix_enc_epoch",type=int, default=-1)
 
     # multilinual NMT
     parser.add_argument("--dec_special", type=bool_flag, default=False,
                         help="")
     parser.add_argument("--zero_shot", nargs='*', default=[],
                         help=" if given [es fr zh], the zero shot is es-fr es-zh fr-zh.")
-    parser.add_argument("--lang_specid", type, default="",
+    parser.add_argument("--lang_specid", type=str, default="",
                         help="en:6,ch:7 must >= 6")
     
     parser.add_argument("--eval_num",type=int,default=200)
     parser.add_argument("--eval_type",nargs="*",default=['valid'])
-    
     #langid reset
     parser.add_argument("--reset_lang",type=str,default="",
                        help= "for transfer learning, eg. en:0,ch:1")
     parser.add_argument("--enc_langnum",type=int,default=-1,
                         help="Number of lang for encoder, when default=-1, enc_langnum == n_langs")
+    parser.add_argument("--add_pred", type=bool_flag, default=False)
     return parser
 
 def my_check(params):
     assert params.fix_enc_epoch == -1 or params.fix_enc_epoch >=1
     if params.fix_enc_epoch >=1:
         assert params.fix_enc
-    params.lang_specid = { em.split(":")[0] : int(em.split(":")[1]) for em in params.lang_specid.split(',')}
+    if params.lang_specid != "":
+        params.lang_specid = { em.split(":")[0] : int(em.split(":")[1]) for em in params.lang_specid.split(',')}
 
 def main(params):
 
-
     my_check(params)
-
     reset_lang(params)
 
     # initialize the multi-GPU / multi-node training
@@ -287,7 +275,6 @@ def main(params):
     # build model
     if params.encoder_only:
         model = build_model(params, data['dico']['src'])
-        
         if params.bridge_steps:
             bridge = build_bridge(params)
     else:
@@ -350,8 +337,6 @@ def main(params):
 
         trainer.n_sentences = 0
 
-        if params.fix_enc_epoch <= epoch : # hard code: encoder should be fixed before bridge is trained well.
-            params.fix_enc = False
 
         while trainer.n_sentences < trainer.epoch_size:
 
@@ -376,13 +361,18 @@ def main(params):
                 trainer.mt_step(lang, lang, params.lambda_ae)
 
             # machine translation steps
-            for lang1, lang2 in shuf_order(params.mt_steps, params):
+            for (lang1, lang2) in params.mt_steps:
                 if "{}-{}".format(lang1,lang2) not in params.zero_shot:
                     trainer.mt_step(lang1, lang2, params.lambda_mt)
         
             for lang1, lang2 in shuf_order(params.bridge_steps, params):
                 trainer.bridge_step(lang1, lang2, params.lambda_bridge)
 
+            for lang1, lang2 in shuf_order(params.align_steps, params):
+                if lang1 == 'en':
+                    trainer.align_step(lang1, lang2, 'forward',params.lambda_align)
+                else:
+                    trainer.align_step(lang1, lang2, 'backward',params.lambda_align)
             # back-translation steps
             for lang1, lang2, lang3 in shuf_order(params.bt_steps):
                 trainer.bt_step(lang1, lang2, lang3, params.lambda_bt)

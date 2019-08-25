@@ -54,12 +54,12 @@ def process_binarized(data, params):
     return data
 
 
-def load_binarized(path, params):
+def load_binarized(path, params, replace=False):
     """
     Load a binarized dataset.
     """
     assert path.endswith('.pth')
-    if params.debug_train:
+    if params.debug_train or replace:
         path = path.replace('train', 'valid')
     if getattr(params, 'multi_gpu', False):
         split_path = '%s.%i.pth' % (path[:-4], params.local_rank)
@@ -128,7 +128,7 @@ def load_mono_data(params, data):
                 continue
 
             # load data / update dictionary parameters / update data
-            mono_data = load_binarized(params.mono_dataset[lang][splt], params)
+            mono_data = load_binarized(params.mono_dataset[lang][splt], params, replace=True)
             set_dico_parameters(params, data, mono_data['dico'], 'src')
 
             # create stream dataset
@@ -234,7 +234,7 @@ def load_para_data(params, data):
 
             # for validation and test set, enumerate sentence per sentence
             if splt != 'train':
-                dataset.tokens_per_batch = 1400
+                dataset.tokens_per_batch = -1
 
             # if there are several processes on the same machine, we can split the dataset
             if splt == 'train' and params.n_gpu_per_node > 1 and params.split_data:
@@ -247,6 +247,63 @@ def load_para_data(params, data):
             logger.info("")
     
     
+
+def load_align_data(params, data, type):
+    """
+    Load alignment data.
+    """
+    print(type)
+    data[type] = {}
+    
+    if 'dico' not in data:
+        data['dico'] = {}
+
+    required_train = set(params.align_steps)
+    if not required_train:
+        return
+    for src, tgt in params.align_dataset[type].keys():
+
+        logger.info('============ Aligment data (%s-%s)' % (src, tgt))
+
+        assert (src, tgt) not in data[type]
+        data[type][(src, tgt)] = {}
+
+        for splt in ['train','valid','test']:
+        
+
+            # no need to load training data for evaluation
+            if splt == 'train' and params.eval_only:
+                continue
+
+
+            # load binarized datasets
+            src_path, tgt_path = params.align_dataset[type][(src, tgt)][splt]
+
+            src_data = load_binarized(src_path, params)
+            tgt_data = load_binarized(tgt_path, params)
+
+
+            set_dico_parameters(params, data, src_data['dico'], 'src')
+
+            # create ParallelDataset
+            dataset = ParallelDataset(
+                src_data['sentences'], src_data['positions'],
+                tgt_data['sentences'], tgt_data['positions'],
+                params
+            )
+
+            # remove empty and too long sentences
+            if splt == 'train':
+                dataset.remove_empty_sentences()
+                dataset.remove_long_sentences(params.max_len)
+
+            # for validation and test set, enumerate sentence per sentence
+            if splt != 'train':
+                dataset.tokens_per_batch = 1400
+
+
+            data[type][(src, tgt)][splt] = dataset
+            logger.info("")
 
 
 def check_data_params(params):
@@ -295,6 +352,14 @@ def check_data_params(params):
     assert all([l1 in params.langs and l2 in params.langs for l1, l2 in params.bridge_steps])
     assert all([l1 != l2 for l1, l2 in params.bridge_steps])
     assert len(params.bridge_steps) == len(set(params.bridge_steps))
+
+
+    #Align steps
+    params.align_steps = [tuple(s.split('-')) for s in params.align_steps.split(',') if len(s) > 0]
+    assert all([len(x) == 2 for x in params.align_steps])
+    assert all([l1 in params.langs and l2 in params.langs for l1, l2 in params.align_steps])
+    assert all([l1 != l2 for l1, l2 in params.align_steps])
+    assert len(params.align_steps) == len(set(params.align_steps))
 
     # parallel classification steps
     params.pc_steps = [tuple(s.split('-')) for s in params.pc_steps.split(',') if len(s) > 0]
@@ -346,6 +411,8 @@ def check_data_params(params):
                               params.pc_steps + params.mt_steps +\
                               params.mass_steps + params.invar_steps + params.bridge_steps)
     
+    required_align = set(params.align_steps)
+
     required_para = required_para_train | set([(l2, l3) for _, l2, l3 in params.bt_steps])
     params.para_dataset = {
         (src, tgt): {
@@ -356,14 +423,32 @@ def check_data_params(params):
         } for src in params.langs for tgt in params.langs
         if src < tgt and ((src, tgt) in required_para or (tgt, src) in required_para)
     }
-    #print(params.para_dataset.values(),"#"*20)
-    #assert all([all([os.path.isfile(p1) and os.path.isfile(p2) for p1, p2 in paths.values()]) for paths in params.para_dataset.values()])
-    #for paths in params.para_dataset.values():
-    #    for p1, p2 in paths.values():
-    #        assert os.path.isfile(p1), p1
-    #        assert os.path.isfile(p2), p2
+    print(params.para_dataset)
 
+    params.align_dataset = {'forward':{},'backward':{}}
 
+    for src in params.langs:
+        for tgt in params.langs:
+            if (src,tgt)  in required_align  or (tgt,src) in required_align:
+                if src > tgt: src, tgt = tgt, src
+                params.align_dataset['forward'][(src,tgt)] = { splt : \
+                    (os.path.join(params.aligndata_path, '%s.forward.%s-%s.%s.pth' % (splt, src, tgt, src)), \
+                    os.path.join(params.aligndata_path, '%s.forward.%s-%s.%s.pth' % (splt, src, tgt, tgt))) if splt == 'train' else \
+                    
+                    (os.path.join(params.data_path, '%s.%s-%s.%s.pth' % (splt, src, tgt, src)), \
+                    os.path.join(params.data_path, '%s.%s-%s.%s.pth' % (splt, src, tgt, tgt))) \
+                    for splt in ['train','valid','test']}
+
+                params.align_dataset['backward'][(src,tgt)] ={ splt : \
+                    (os.path.join(params.aligndata_path, '%s.backward.%s-%s.%s.pth' % (splt, src, tgt, src)), \
+                    os.path.join(params.aligndata_path, '%s.backward.%s-%s.%s.pth' % (splt, src, tgt, tgt))) if splt == 'train' else \
+                    
+                    (os.path.join(params.data_path, '%s.%s-%s.%s.pth' % (splt, src, tgt, src)), \
+                    os.path.join(params.data_path, '%s.%s-%s.%s.pth' % (splt, src, tgt, tgt))) \
+                    for splt in ['train','valid','test']}
+
+                    
+    
     # check that we can evaluate on BLEU
     assert params.eval_bleu is False or len(params.mt_steps + params.bt_steps) > 0
     if len(params.zero_shot) > 0:
@@ -372,6 +457,12 @@ def check_data_params(params):
         zero_shot = set([ "{}-{}".format(lang1,lang2) for lang1 in zero_shot for lang2 in zero_shot  if lang1!=lang2])
         params.zero_shot = zero_shot
     assert params.real_tgtlang in params.langs  or  params.real_tgtlang == ""
+
+
+
+
+
+
 
 def load_data(params):
     """
@@ -387,6 +478,10 @@ def load_data(params):
 
     # parallel datasets
     load_para_data(params, data)
+
+    # alignment datasets
+    load_align_data(params, data, 'forward') # eg. en-ru,  ru is ordered by alignment info. len(en) == len(ru). and len(en) is real.
+    load_align_data(params, data, 'backward')
 
     # monolingual data summary
     logger.info('============ Data summary')
