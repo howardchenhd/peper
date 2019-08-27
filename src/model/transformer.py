@@ -12,6 +12,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from src.utils import LabelSmoothingLoss
 import pdb
 
 N_MAX_POSITIONS = 512  # maximum input sequence length
@@ -112,6 +113,11 @@ class PredLayer(nn.Module):
         self.pad_index = params.pad_index
         dim = params.emb_dim
 
+        if params.label_smooth != 0:
+            self.loss_fn = LabelSmoothingLoss(self.n_words,params.label_smooth)
+        else:
+            self.loss_fn = nn.CrossEntropyLoss(reduction='elementwise_mean')
+
         if params.asm is False:
             self.proj = Linear(dim, self.n_words, bias=True)
         else:
@@ -131,10 +137,10 @@ class PredLayer(nn.Module):
 
         if self.asm is False:
             scores = self.proj(x).view(-1, self.n_words)
-            if mean:
-                loss = F.cross_entropy(scores, y, reduction='elementwise_mean')
-            else:
-                loss = F.cross_entropy(scores, y, reduction ='none')
+            #if mean:
+            loss = self.loss_fn(scores, y)
+            # else:
+            #     loss = F.cross_entropy(scores, y, reduction ='none')
         else:
             _, loss = self.proj(x, y)
             scores = self.proj.log_prob(x) if get_scores else None

@@ -68,7 +68,7 @@ class Evaluator(object):
             else:
                 iterator = self.data['mono'][lang1][data_set].get_iterator(
                     shuffle=False,
-                    group_by_size=True,
+                    group_by_size=False,
                     n_sentences=n_sentences,
                 )
         else:
@@ -78,7 +78,7 @@ class Evaluator(object):
             if self.data['forward']:
                 iterator = self.data['forward'][(_lang1, _lang2)][data_set].get_iterator(
                     shuffle=False,
-                    group_by_size=True,
+                    group_by_size=False,
                     n_sentences=n_sentences
                 )
 
