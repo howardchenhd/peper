@@ -114,7 +114,7 @@ class PredLayer(nn.Module):
         dim = params.emb_dim
 
         if params.label_smooth != 0:
-            self.loss_fn = LabelSmoothingLoss(self.n_words,params.label_smooth)
+            self.loss_fn = LabelSmoothingLoss(self.n_words, params.label_smooth)
         else:
             self.loss_fn = nn.CrossEntropyLoss(reduction='elementwise_mean')
 

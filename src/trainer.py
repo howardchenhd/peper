@@ -727,10 +727,8 @@ class Trainer(object):
         if params.fix_enc:
             module.remove('model')
         # optimize
-        if params.multi_bridge:
-            self.optimize([loss], module)
-        else:
-            self.optimize([loss], module)
+        
+        self.optimize([loss], module)
 
         # number of processed sentences / words
         self.n_sentences += params.batch_size

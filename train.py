@@ -123,7 +123,7 @@ def get_parser():
     # batch parameters
     parser.add_argument("--bptt", type=int, default=256,
                         help="Sequence length")
-    parser.add_argument("--max_len", type=int, default=100,
+    parser.add_argument("--max_len", type=int, default=150,
                         help="Maximum length of sentences (after BPE)")
     parser.add_argument("--group_by_size", type=bool_flag, default=True,
                         help="Sort sentences by size during the training")

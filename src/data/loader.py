@@ -187,7 +187,7 @@ def load_para_data(params, data):
 
         for splt in ['train', 'valid', 'test']:
         
-            if "{}-{}".format(src,tgt) in params.zero_shot and (splt=='train' and (src,tgt) not in params.invar_steps):
+            if "{}-{}".format(src,tgt) in params.zero_shot and splt == 'train':
                 continue
 
             # no need to load training data for evaluation
