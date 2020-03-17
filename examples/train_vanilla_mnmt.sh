@@ -10,7 +10,7 @@ export NGPU=2;
 --enc_layers 6 \
 --data_path $DATA_PATH \
 --dec_layers 6 \
---emb_dim 512 \
+--emb_dim 1024 \
 --lgs 'ar-bg-de-el-en-es-fr-hi-ru-sw-th-tr-ur-vi-zh'  \
 --encoder_only False \
 --mt_step 'ar-en,ar-es,ar-ru,en-ar,en-es,en-ru,es-ar,es-en,es-ru,ru-ar,ru-en,ru-es' \
